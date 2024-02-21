@@ -1,0 +1,13 @@
+svg {
+  width: 1000px;
+  height: 800px;
+}
+
+.selected {
+  stroke: red;
+  fill: red
+}
+
+.selected ellipse{
+  stroke: red
+}

@@ -1,0 +1,75 @@
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { graphviz, type Graphviz } from "d3-graphviz";
+  import * as d3 from "d3-selection";
+  import { drag } from "d3-drag";
+
+  let graphContainer: HTMLDivElement;
+  let viz: Graphviz<d3.BaseType, any, d3.BaseType, any>;
+
+  let dotSrc = "graph { }";
+  let nodes: string[] = [];
+
+  onMount(() => {
+    if (graphContainer) {
+      viz = graphviz(graphContainer).renderDot(dotSrc);
+      viz.on("end", initializeDrag);
+    }
+  });
+
+  function initializeDrag() {
+    const nodeElements = document.querySelectorAll(".node");
+
+    nodeElements.forEach((node: Element) => {
+      d3.select(node as SVGGElement).call(
+        drag<SVGGElement, unknown, unknown>()
+          .on("start", dragStarted)
+          .on("drag", dragged)
+          .on("end", dragEnded)
+      );
+    });
+  }
+
+  function dragStarted(event: any, d: any) {
+    d3.select(this).raise().attr("stroke", "black");
+  }
+
+  function dragged(this: SVGGElement, event: any, d: any) {
+    // Get the current mouse position relative to the SVG container
+    const containerRect = this.getBoundingClientRect();
+    const mouseX = 0
+    const mouseY = 0
+
+    console.log(event.x, event.y, containerRect.x, containerRect.y)
+
+    // Apply the translation to the SVG element
+    d3.select(this).attr("transform", `translate(${mouseX}, ${mouseY})`);
+}
+
+  function dragEnded(event: any, d: any) {
+    d3.select(this).attr("stroke", null);
+  }
+
+  function addNode() {
+    const newNode = `Test${nodes.length}`;
+    nodes.push(newNode);
+    dotSrc = `graph { ${nodes.join("; ")} }`;
+
+    if (viz && graphContainer) {
+      viz.renderDot(dotSrc);
+      console.log(viz);
+      initializeDrag();
+    }
+  }
+</script>
+
+<div bind:this={graphContainer}></div>
+<button on:click={addNode}>Add Node</button>
+
+<style>
+</style>
+
+
+node.empty()
+
+      d3.select(graphContainer).call(drag(nodeElements).on("start.render drag.render end.render", render))
