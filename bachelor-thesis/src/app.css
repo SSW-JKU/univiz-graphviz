@@ -5,9 +5,26 @@ svg {
 
 .selected {
   stroke: red;
-  fill: red
+  fill: red;
 }
 
-.selected ellipse{
-  stroke: red
+.selected circle {
+  stroke: red;
+}
+
+.node circle {
+  cursor: move;
+}
+
+.node text {
+  fill: blue;
+  font-size: 16px;
+  font-family: Arial, sans-serif;
+  dominant-baseline: middle;
+  text-anchor: middle;
+}
+
+html,
+body {
+  height: 100%;
 }

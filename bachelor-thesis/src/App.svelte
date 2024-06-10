@@ -107,19 +107,71 @@
 
   function setNodePosition() {
     nodeElements.forEach((nodeElement) => {
-        const nodePos = nodeElement.node() as SVGGElement;
-        const nodeId = nodePos.id;
-        const position = nodePositions.get(nodeId);
-        if (position) {
-          const { x, y } = position;
-          nodeElement.attr("transform", `translate(${x},${y})`);
-        }
-      });
+      const nodePos = nodeElement.node() as SVGGElement;
+      const nodeId = nodePos.id;
+      const position = nodePositions.get(nodeId);
+      if (position) {
+        const { x, y } = position;
+        nodeElement.attr("transform", `translate(${x},${y})`);
+      }
+    });
   }
 
   /////////////////////////////////////////////////////////////////////////////////////
   //////                             Node dragging                               //////
   /////////////////////////////////////////////////////////////////////////////////////
+
+  // Update the position of the edges based on the positions of the connected nodes
+  function updateEdgePositions() {
+    edges.forEach((edge) => {
+      const [sourceNodeId, targetNodeId] = edge.split("->");
+      const sourceNodePosition = nodePositions.get(
+        findNodeByLabel(sourceNodeId).node().id
+      );
+      const targetNodePosition = nodePositions.get(
+        findNodeByLabel(targetNodeId).node().id
+      );
+      if (sourceNodePosition && targetNodePosition) {
+        // Update the position of the edge
+        // Example: You might need to update the 'd' attribute of the SVG path representing the edge
+        // You may need to calculate the new path based on the positions of the source and target nodes
+        // and update it accordingly
+        // For simplicity, let's assume the edge is represented by a line from source to target
+        const edgePath = document.getElementById(
+          `edge1` // TODO Change
+        );
+        if (edgePath) {
+          console.log(edgePath);
+          const newPath = `M${sourceNodePosition.x},${sourceNodePosition.y} C${
+            sourceNodePosition.x
+          },${(sourceNodePosition.y + targetNodePosition.y) / 2} ${
+            targetNodePosition.x
+          },${(sourceNodePosition.y + targetNodePosition.y) / 2} ${
+            targetNodePosition.x
+          },${targetNodePosition.y}`;
+          // Update the 'd' attribute of the path
+          edgePath.setAttribute("d", newPath);
+        }
+      }
+    });
+  }
+
+  function findNodeByLabel(
+    label: string
+  ): d3.Selection<BaseType, unknown, HTMLElement, any> | null {
+    // Iterate through the node elements to find the node with the given label
+    for (const nodeElement of nodeElements) {
+      const nodeLabel = nodeElement
+        .text()
+        .trim()
+        .match(/node([^\n]+)/)[0];
+      if (nodeLabel === label) {
+        return nodeElement;
+      }
+    }
+    // If no node with the given label is found, return null
+    return null;
+  }
 
   function enableDrag() {
     nodeElements.forEach((element) => {
@@ -132,8 +184,7 @@
             .on("end", dragended)
         )
         .selectAll("*")
-        .attr("pointer-events", "all")
-        .style("cursor", "grab");
+        .attr("pointer-events", "all");
     });
   }
 
@@ -166,6 +217,7 @@
 
       // Update the current position of the node in the map
       nodePositions.set(nodeId, { x: newX, y: newY });
+      updateEdgePositions();
     }
   }
 
@@ -222,13 +274,14 @@
       const position = dotSrc.lastIndexOf("}");
       const edgeToAdd = `${nodeText1}->${nodeText2}`;
       edges.push(edgeToAdd);
+      console.log("add", edges);
       dotSrc =
         dotSrc.slice(0, position) + "; " + edgeToAdd + dotSrc.slice(position);
       selectedNodes[0].classed("selected", false);
       selectedNodes[1].classed("selected", false);
       selectedNodes = [];
       graph.renderDot(dotSrc);
-      setNodePosition()
+      setNodePosition();
     }
   }
 </script>
