@@ -1,13 +1,11 @@
 import "./app.css";
 import App from "./App.svelte";
-import App2 from "./App2.svelte";
-import App3 from "./App3.svelte";
 
 
 let app;
 const appElement = document.getElementById("app");
 if (appElement) {
-  app = new App2({
+  app = new App({
     target: appElement,
   });
 } else {
