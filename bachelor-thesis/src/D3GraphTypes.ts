@@ -3,5 +3,5 @@ export type GraphNode = {
   label: string;
   posX: number;
   posY: number;
-  
+  connectedNodes: GraphNode[];
 };
