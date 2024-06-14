@@ -4,22 +4,10 @@ import { get, type Writable } from "svelte/store";
 import type { GraphNode } from "./D3GraphTypes";
 
 export const renderGraph = (
-  graphviz: Graphviz<SVGGElement, unknown, null, undefined>
+  graphviz: Graphviz<SVGElement, unknown, null, undefined>
 ): void => {
   graphviz.render();
   // .on("end", interactive);
-};
-
-export const isNodeLabelUnique = (
-  label: string,
-  nodes: GraphNode[]
-): boolean => {
-  for (const node of nodes) {
-    if (label === node.label) {
-      return false;
-    }
-  }
-  return true;
 };
 
 export const addNode = (
@@ -66,7 +54,7 @@ export const updateDotSrc = (
 
 export const handleResize = (
   entries: ResizeObserverEntry[],
-  graphviz: Graphviz<SVGGElement, unknown, null, undefined>
+  graphviz: Graphviz<SVGElement, unknown, null, undefined>
 ): void => {
   for (let entry of entries) {
     const { width, height } = entry.contentRect;
@@ -75,6 +63,14 @@ export const handleResize = (
   }
   renderGraph(graphviz);
 };
+
+export const getGraphNodeByID = () => {
+
+}
+
+export const getSVGNodeByID = (id: number): SVGGElement => {
+
+}
 
 //////////////////// UNUSED
 
@@ -93,4 +89,16 @@ export const handleResize = (
 //     dotSrc = dotSrcLines.join("\n");
 //     renderGraph();
 //   });
+// };
+
+// export const isNodeLabelUnique = (
+//   label: string,
+//   nodes: GraphNode[]
+// ): boolean => {
+//   for (const node of nodes) {
+//     if (label === node.label) {
+//       return false;
+//     }
+//   }
+//   return true;
 // };

@@ -12,9 +12,9 @@
    */
   export let dotSrc = "digraph { }";
   let dotSrcStore: Writable<string> = writable(dotSrc);
-  let graphSVG: SVGGElement;
+  let graphSVG: SVGElement;
   let graphContainer: HTMLDivElement;
-  let graphviz: Graphviz<SVGGElement, unknown, null, undefined>;
+  let graphviz: Graphviz<SVGElement, unknown, null, undefined>;
   let nodesStore: Writable<GraphNode[]> = writable([]);
   let resizeObserver: ResizeObserver;
 
