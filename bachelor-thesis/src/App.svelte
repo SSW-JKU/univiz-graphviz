@@ -34,7 +34,7 @@
   class:selected={selectedOption === 4}
   on:click={() => selectOption(4)}
 >
-  D3-Graphviz Non-Draggable
+  D3-New
 </button>
 </div>
 
