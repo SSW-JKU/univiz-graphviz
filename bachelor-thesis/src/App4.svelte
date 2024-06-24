@@ -1,19 +1,20 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { redraw, type D3Edge, type D3Node } from "./App4";
+  import { getDotSrc, redraw, type D3Edge, type D3Node } from "./App4";
+  import { instance } from "@viz-js/viz";
 
   export const testNodes: D3Node[] = [
     {
       id: "node1",
       label: "Node 1",
-      posX: 50,
-      posY: 100,
+      posX: 37.5,
+      posY: 125,
     },
     {
       id: "node2",
       label: "Node 2",
-      posX: 200,
-      posY: 150,
+      posX: 37.5,
+      posY: 25,
     },
     {
       id: "node3",
@@ -42,10 +43,6 @@
     },
     {
       from: testNodes[1],
-      to: testNodes[1],
-    },
-    {
-      from: testNodes[1],
       to: testNodes[2],
     },
     {
@@ -64,6 +61,11 @@
   let svg: SVGElement;
   onMount(() => {
     redraw(svg, testNodes, testEdges);
+    const dotSrc = getDotSrc(testNodes, testEdges);
+    instance().then((viz) => {
+      console.log(dotSrc);
+      console.log(viz.renderString(dotSrc, { format: "plain" }));
+    });
   });
 
   const addOne = () => {
