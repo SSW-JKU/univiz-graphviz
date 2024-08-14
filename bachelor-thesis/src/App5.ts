@@ -26,7 +26,12 @@ export const createNode = (
   };
 };
 
-export const redraw = (svg: SVGElement, nodes: D3Node[], edges: D3Edge[]) => {
+export const redraw = (
+  svg: SVGElement,
+  nodes: D3Node[],
+  edges: D3Edge[],
+  selectedNodes: D3Node[]
+) => {
   const radius = 25;
   d3.select(svg)
     .selectAll<SVGCircleElement, D3Node>("circle")
@@ -42,9 +47,58 @@ export const redraw = (svg: SVGElement, nodes: D3Node[], edges: D3Edge[]) => {
     .style("fill", "white")
     .on("click", function (event, d) {
       const currentFill = d3.select(this).style("fill");
-      d3.select(this).style("fill", currentFill === "red" ? "white" : "red");
+      if (currentFill === "white" && selectedNodes.length < 2) {
+        d3.select(this).style("fill", "red");
+        selectedNodes.push(d)
+      } else if (currentFill === "red") {
+        d3.select(this).style("fill", "white");
+        selectedNodes = selectedNodes.filter(node => node.id !== d.id)
+      }
+      
+      console.log(selectedNodes);
     });
-  // redrawLines(svg, edges, radius);
+  redrawLines(svg, edges, radius);
+};
+
+const redrawLines = (svg: SVGElement, edges: D3Edge[], radius: number) => {
+  d3.select(svg)
+    .selectAll<SVGLineElement, D3Edge>("line")
+    .data(edges, (d: D3Edge) => d.from.id + "_" + d.to.id)
+    .join("line")
+    .attr("x1", (d) => {
+      const dx = d.to.posX - d.from.posX;
+      const dy = d.to.posY - d.from.posY;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      const offsetX = (dx * radius) / length;
+      return Number.isNaN(offsetX) ? d.from.posX : d.from.posX + offsetX;
+    })
+    .attr("y1", (d) => {
+      const dx = d.to.posX - d.from.posX;
+      const dy = d.to.posY - d.from.posY;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      const offsetY = (dy * radius) / length;
+      return Number.isNaN(offsetY) ? d.from.posY : d.from.posY + offsetY;
+    })
+    .attr("x2", (d) => {
+      const dx = d.to.posX - d.from.posX;
+      const dy = d.to.posY - d.from.posY;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      const offsetX = (dx * radius) / length;
+      return Number.isNaN(offsetX) ? d.from.posX : d.to.posX - offsetX;
+    })
+    .attr("y2", (d) => {
+      const dx = d.to.posX - d.from.posX;
+      const dy = d.to.posY - d.from.posY;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      const offsetY = (dy * radius) / length;
+      return Number.isNaN(offsetY) ? d.from.posY : d.to.posY - offsetY;
+    })
+    .style("stroke", "red")
+    .attr("marker-end", "url(#arrow)")
+    // Add from - to id to HTML element
+    .attr("data-edge", (d) => {
+      return d.from.id + "->" + d.to.id;
+    });
 };
 
 export const getDotSrc = (nodes: D3Node[], edges: D3Edge[]): string => {

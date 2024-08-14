@@ -7,7 +7,7 @@
   let nodeCount = 0;
   let svg: SVGElement;
   const nodes: D3Node[] = [];
-  const selectedNodes: [] | [D3Node] | [D3Node, D3Node] = [];
+  let selectedNodes: D3Node[] = [];
   const edges: D3Edge[] = [];
 
   const updateGraph = async () => {
@@ -15,12 +15,12 @@
     const viz = await instance();
     const layout = await viz.renderJSON(dotSrc);
     updateNodePositions(layout, nodes);
-    redraw(svg, nodes, edges);
+    redraw(svg, nodes, edges, selectedNodes);
   };
 
   onMount(() => {
     if (svg) {
-      redraw(svg, nodes, edges);
+      redraw(svg, nodes, edges, selectedNodes);
     }
   });
 </script>
@@ -35,11 +35,20 @@
         nodes.push(createNode(nodeCount));
         nodeCount++;
         await updateGraph();
-        console.log(nodes)
+        console.log(nodes);
       }}>Add Node</button
     >
     <button>Remove Selected Node</button>
-    <button>Connect Selected Nodes</button>
+    <button
+      on:click={() => {
+        if (selectedNodes.length === 2) {
+          edges.push({ from: selectedNodes[0], to: selectedNodes[1] });
+          selectedNodes = []
+          console.log(edges);
+          redraw(svg, nodes, edges, selectedNodes)
+        }
+      }}>Connect Selected Nodes</button
+    >
   </div>
 </div>
 
