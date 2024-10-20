@@ -5,6 +5,10 @@
   import GraphsAndStuff from "./pages/GraphsAndStuff.svelte";
   import Visualizer from "./modes/Visualizer.svelte";
   import Presenting from "./modes/Presenting.svelte";
+  import BFS from "./algorithms/BFS.svelte"
+  import DFS from "./algorithms/DFS.svelte"
+  import Djikstra from "./algorithms/Dijkstra.svelte"
+  import Dijkstra from "./algorithms/Dijkstra.svelte";
 
   let currentPath = window.location.pathname;
   let navElement: HTMLElement | null = null;
@@ -72,6 +76,26 @@
             >
           </div>
         </li>
+
+        <!-- Dropdown for Algorithms -->
+        <li class="dropdown">
+          <a
+            href=""
+            class="nav-link"
+            class:active={currentPath.startsWith("/algorithms")}>Algorithms</a
+          >
+          <div class="dropdown-content">
+            <a href="/algorithms/bfs" class="dropdown-link" use:link
+              >BFS</a
+            >
+            <a href="/algorithms/dfs" class="dropdown-link" use:link
+              >DFS</a
+            >
+            <a href="/algorithms/dijkstra" class="dropdown-link" use:link
+              >Dijkstra</a
+            >
+          </div>
+        </li>
       </ul>
     </Router>
   </nav>
@@ -82,6 +106,9 @@
     <Route path="/graphsandstuff/testgraph" component={GraphsAndStuff} />
     <Route path="/graphsandstuff/visualizer" component={Visualizer} />
     <Route path="/graphsandstuff/teaching-mode" component={Presenting} />
+    <Route path="/algorithms/bfs" component={BFS} />
+    <Route path="/algorithms/dfs" component={DFS} />
+    <Route path="/algorithms/dijkstra" component={Dijkstra} />
   </Router>
 </main>
 

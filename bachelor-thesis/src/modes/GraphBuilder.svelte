@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import {
+    changeLabel,
     createNode,
+    edgeExists,
     getDotSrc,
     getEdgePosBetweenNodes,
     redraw,
@@ -44,13 +46,6 @@
     redraw(svg, nodes, edges, selectedNodes, directedGraph);
   };
 
-  /**
-   * Checks if an edge already exists between these 2 nodes (Only checks one direction)
-   */
-  const edgeExists = (fromNode: D3Node, toNode: D3Node): boolean => {
-    return edges.some((edge) => edge.from === fromNode && edge.to === toNode);
-  };
-
   const checkZoomLevel = (): void => {
     if (window.devicePixelRatio !== zoomLevel) {
       zoomLevel = window.devicePixelRatio;
@@ -77,7 +72,9 @@
     }
   }
 
-  // Update the node label from the property menu
+  /**
+   * Update the node label from the property menu
+   */
   const updateNodeLabel = (newLabel: string) => {
     selectedNodes.update((selNodes) => {
       if (selNodes.length === 1) {
@@ -92,21 +89,6 @@
 
     // Redraw the graph after label change
     updateGraph();
-  };
-
-  /**
-   * Returnstrue if @param nodeLabel is greater than @param nodeCount 
-   * or if @param nodeLabel doesn't match the Node X pattern.
-   */
-  const changeLabel = (nodeLabel: string, nodeCount: number): boolean => {
-    const regex = /^Node (\d+)$/;
-
-    const match = nodeLabel.match(regex);
-    if (match) {
-      const nodeNumber = parseInt(match[1], 10);
-      return nodeNumber <= nodeCount; // 
-    }
-    return false;
   };
 </script>
 
@@ -161,7 +143,7 @@
           const toNode = $selectedNodes[1];
 
           // Check if an edge already exists in the same direction
-          if (!edgeExists(fromNode, toNode)) {
+          if (!edgeExists(fromNode, toNode, edges)) {
             edges.push({
               from: fromNode,
               to: toNode,
@@ -198,7 +180,7 @@
   }
 
   .graph {
-    flex-grow: 1; /* Let the graph take all remaining space */
+    flex-grow: 1;
     background-color: lightgray;
     display: flex;
     justify-content: center;
@@ -213,7 +195,6 @@
     justify-content: space-between;
     height: 60px;
     min-height: 10%;
-    flex-shrink: 0;
     background-color: #2c3e50;
   }
 
@@ -265,7 +246,7 @@
   svg {
     height: 100%;
     width: 100%;
-    object-fit: contain; /* Ensure SVG resizes properly */
+    object-fit: contain;
   }
 
   .property-menu {

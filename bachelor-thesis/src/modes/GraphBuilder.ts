@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import * as transition from 'd3-transition';
+import * as transition from "d3-transition";
 import { get, type Writable } from "svelte/store";
 
 // Define the type for a node in the graph
@@ -161,8 +161,8 @@ export const redraw = (
         ? "red"
         : "white"
     ) // Default fill color for non-selected nodes
-    .style("cursor", "pointer") 
-    .on("click", handleNodeClick)    
+    .style("cursor", "pointer")
+    .on("click", handleNodeClick);
 
   // Add text labels for each node
   g.selectAll<SVGTextElement, D3Node>("text")
@@ -175,7 +175,7 @@ export const redraw = (
     .style("font-size", "12px")
     .style("fill", "black")
     .text((d) => d.label) // Display the node label text
-    .style("cursor", "pointer") 
+    .style("cursor", "pointer")
     .on("click", handleNodeClick);
 
   // Redraw lines representing edges between nodes
@@ -209,7 +209,7 @@ const redrawLines = (
 ) => {
   // Create a line generator with smooth curves (using d3.curveBasis for a nice smooth path)
   const lineGenerator = d3.line().curve(d3.curveBasis);
-  addArrowMarker(svg)
+  addArrowMarker(svg);
 
   g.selectAll<SVGPathElement, D3Edge>("path")
     .data(edges, (d: D3Edge) => d.from.id + "_" + d.to.id) // Use unique edge key
@@ -346,4 +346,30 @@ export const getEdgePosBetweenNodes = (
 
   // Return the `pos` string if the edge is found, otherwise return an empty string
   return edge?.pos || ""; // Use optional chaining to check if edge exists, and return "" if not found
+};
+
+/**
+ * Checks if an edge already exists between these 2 nodes (Only checks one direction)
+ */
+export const edgeExists = (
+  fromNode: D3Node,
+  toNode: D3Node,
+  edges: D3Edge[]
+): boolean => {
+  return edges.some((edge) => edge.from === fromNode && edge.to === toNode);
+};
+
+/**
+ * Returns true if @param nodeLabel is greater than @param nodeCount
+ * or if @param nodeLabel doesn't match the Node X pattern.
+ */
+export const changeLabel = (nodeLabel: string, nodeCount: number): boolean => {
+  const regex = /^Node (\d+)$/;
+
+  const match = nodeLabel.match(regex);
+  if (match) {
+    const nodeNumber = parseInt(match[1], 10);
+    return nodeNumber <= nodeCount; //
+  }
+  return false;
 };
