@@ -13,8 +13,11 @@ INPUT .\Bachelorthesis.aux
 INPUT .\Bachelorthesis.aux
 INPUT Bachelorthesis.aux
 OUTPUT Bachelorthesis.aux
+INPUT C:\Users\burgs\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmtt10.tfm
 OUTPUT Bachelorthesis.pdf
 INPUT C:\Users\burgs\AppData\Local\MiKTeX\fonts\map\pdftex\pdftex.map
 INPUT Bachelorthesis.aux
 INPUT C:\Users\burgs\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr10.pfb
 INPUT C:\Users\burgs\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr10.pfb
+INPUT C:\Users\burgs\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmtt10.pfb
+INPUT C:\Users\burgs\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmtt10.pfb
