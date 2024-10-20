@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "deploy": "npm run build && rsync -avz --chown=www-data:www-data --chmod=755 ./dist/ root@192.168.1.102:/home/pi/svelte-app",
+    "deploy": "npm run build && rsync -avz --chown=www-data:www-data --chmod=755 ./dist/ root@192.168.50.10:/home/pi/svelte-app",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
@@ -23,12 +23,13 @@
   },
   "dependencies": {
     "@types/d3-selection": "^3.0.10",
-    "@viz-js/viz": "^3.6.0",
+    "@viz-js/viz": "^3.9.0",
     "d3": "^7.8.5",
     "d3-drag": "^3.0.0",
     "d3-graphviz": "^5.3.0",
     "d3-selection": "^3.0.0",
     "d3-transition": "^3.0.1",
-    "query-string": "^8.2.0"
+    "query-string": "^8.2.0",
+    "svelte-routing": "^2.13.0"
   }
 }
