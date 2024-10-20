@@ -133,11 +133,6 @@
         findNodeByLabel(targetNodeId).node().id
       );
       if (sourceNodePosition && targetNodePosition) {
-        // Update the position of the edge
-        // Example: You might need to update the 'd' attribute of the SVG path representing the edge
-        // You may need to calculate the new path based on the positions of the source and target nodes
-        // and update it accordingly
-        // For simplicity, let's assume the edge is represented by a line from source to target
         const edgePath = document.getElementById(
           `edge1` // TODO Change
         );
