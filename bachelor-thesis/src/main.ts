@@ -1,11 +1,11 @@
 import "./app.css";
-import App from "./App.svelte";
+import TestApp from "./TestApp.svelte";
 
 
 let app;
 const appElement = document.getElementById("app");
 if (appElement) {
-  app = new App({
+  app = new TestApp({
     target: appElement,
   });
 } else {
