@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "deploy": "npm run build && rsync -avz --chown=www-data:www-data --chmod=755 ./dist/ root@192.168.1.102:/home/pi/svelte-app",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
