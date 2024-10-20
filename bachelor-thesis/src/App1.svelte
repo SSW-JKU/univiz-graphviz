@@ -38,6 +38,7 @@
   afterUpdate(() => {
     if (graphContainer) {
       graph = graphviz(graphContainer).renderDot(dotSrc);
+
       //graph.fit(true);
       if ($nodes.length > 0) {
         nodeElements.push(getNode($nodes.length));
