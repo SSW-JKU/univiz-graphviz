@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import {
-    changeLabel,
     createNode,
     edgeExists,
     getDotSrc,
@@ -9,11 +8,12 @@
     redraw,
     updateNodePositions,
   } from "./GraphBuilder";
-  import type { D3Edge, D3Node, EdgeLayout, GraphLayout } from "./GraphBuilder";
+  import type { D3Edge, D3Node, EdgeLayout, GraphLayout } from "../types/Graph";
   import { instance } from "@viz-js/viz";
   import Properties from "../components/Properties.svelte";
   import { writable } from "svelte/store";
 
+  export let directedGraph: boolean;
   let nodeCount = 0;
   let svg: SVGElement;
   let nodes: D3Node[] = [];
@@ -22,14 +22,12 @@
   let edgeLayout: EdgeLayout[];
   let tempNodeLabel: string;
   let zoomLevel: number;
-  let directedGraph = true;
+  const editable = true;
 
   const updateGraph = async () => {
-    const dotSrc = getDotSrc(nodes, edges);
-    console.log(dotSrc);
+    const dotSrc = getDotSrc(nodes, edges, directedGraph);
     const viz = await instance();
     const layout = (await viz.renderJSON(dotSrc)) as GraphLayout;
-    console.log(layout);
     edgeLayout = layout.edges;
 
     // Update node positions based on the layout
@@ -40,10 +38,11 @@
       edge.pos = getEdgePosBetweenNodes(
         edge.from.d3id,
         edge.to.d3id,
-        edgeLayout
+        edgeLayout,
+        directedGraph
       );
     });
-    redraw(svg, nodes, edges, selectedNodes, directedGraph);
+    redraw(svg, nodes, edges, selectedNodes, directedGraph, editable);
   };
 
   const checkZoomLevel = (): void => {
@@ -56,7 +55,7 @@
     zoomLevel = document.documentElement.clientWidth;
     window.addEventListener("resize", checkZoomLevel);
     if (svg) {
-      redraw(svg, nodes, edges, selectedNodes, directedGraph);
+      redraw(svg, nodes, edges, selectedNodes, directedGraph, editable);
     }
   });
 
@@ -68,7 +67,7 @@
     zoomLevel;
     if (svg) {
       zoomLevel = document.documentElement.clientWidth;
-      redraw(svg, nodes, edges, selectedNodes, directedGraph);
+      redraw(svg, nodes, edges, selectedNodes, directedGraph, editable);
     }
   }
 
@@ -78,11 +77,7 @@
   const updateNodeLabel = (newLabel: string) => {
     selectedNodes.update((selNodes) => {
       if (selNodes.length === 1) {
-        const updatedNode = { ...selNodes[0], label: newLabel };
-        nodes = nodes.map((node) =>
-          node.id === updatedNode.id ? updatedNode : node
-        );
-        return [updatedNode]; // Update selected nodes
+        selNodes[0].label = tempNodeLabel;
       }
       return selNodes;
     });
@@ -90,6 +85,12 @@
     // Redraw the graph after label change
     updateGraph();
   };
+
+  selectedNodes.subscribe((selNodes) => {
+    if (selNodes.length === 0) {
+      tempNodeLabel = "";
+    }
+  });
 </script>
 
 <div class="container">
@@ -98,7 +99,6 @@
     <div class="property-menu">
       <Properties
         bind:tempNodeLabel
-        bind:directedGraph
         nodeLabel={$selectedNodes.length === 1 ? $selectedNodes[0].label : null}
         nodeID={$selectedNodes.length === 1 ? $selectedNodes[0].id : null}
         labelUpdate={updateNodeLabel}
@@ -108,55 +108,55 @@
   <div class="button-container">
     <button
       on:click={async () => {
-        nodes.push(createNode(nodeCount));
+        nodes.push(createNode(`node${nodeCount}`, nodeCount));
         selectedNodes.set([]);
         nodeCount++;
         await updateGraph();
       }}>Add Node</button
     >
     <button
+      disabled={$selectedNodes.length !== 1}
       on:click={async () => {
         if ($selectedNodes.length === 1) {
           nodeCount--;
           edges = edges.filter(
             (edge) =>
-              edge.from.id !== $selectedNodes[0].id &&
-              edge.to.id !== $selectedNodes[0].id
+              edge.from.d3id !== $selectedNodes[0].d3id &&
+              edge.to.d3id !== $selectedNodes[0].d3id
           );
-          nodes = nodes.filter((node) => node.id !== $selectedNodes[0].id);
-          for (let i = 0; i < nodeCount; i++) {
-            if (changeLabel(nodes[i].label, nodeCount)) {
-              nodes[i].label = "Node " + i;
-            }
-            nodes[i].d3id = i;
-            nodes[i].id = "node" + i;
-          }
+          nodes = nodes.filter((node) => node.d3id !== $selectedNodes[0].d3id);
           selectedNodes.set([]);
           await updateGraph();
         }
       }}>Remove Selected Node</button
     >
     <button
+      disabled={$selectedNodes.length !== 2}
       on:click={async () => {
         if ($selectedNodes.length === 2) {
           const fromNode = $selectedNodes[0];
           const toNode = $selectedNodes[1];
 
           // Check if an edge already exists in the same direction
-          if (!edgeExists(fromNode, toNode, edges)) {
+          if (
+            (directedGraph && !edgeExists(fromNode, toNode, edges)) ||
+            (!directedGraph &&
+              !edgeExists(fromNode, toNode, edges) &&
+              !edgeExists(toNode, fromNode, edges))
+          ) {
             edges.push({
               from: fromNode,
               to: toNode,
               pos: "", // Initialize the edge with an empty `pos`
             });
             selectedNodes.set([]);
-            await updateGraph(); // This will handle adding the edge and updating its `pos`
+            await updateGraph()
           } else {
             console.log(
               "Edge already exists between",
-              fromNode.id,
+              fromNode.d3id,
               "and",
-              toNode.id
+              toNode.d3id
             );
             alert(
               `Edge already exists from ${fromNode.label} to ${toNode.label}`
@@ -220,12 +220,14 @@
     background-color: #34495e;
   }
 
-  button:not(:first-child) {
-    margin-left: 5px;
+  button:disabled {
+    background-color: #35404b;
+    color: #bdc3c7;
+    cursor: not-allowed;
   }
 
-  button:not(:last-child) {
-    margin-right: 5px;
+  button:disabled:hover {
+    background-color: #35404b;
   }
 
   @media (max-width: 300px) {

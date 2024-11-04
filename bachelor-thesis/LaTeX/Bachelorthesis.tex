@@ -12,6 +12,7 @@ invert y for nodes and edges, as svg uses inverted direction (than vis js) and t
 CENTER ZOOM reactively
 window size (developer menu), center again
 dropdown -> normal
+manual chunking vite
 
 
 In the course "Algorithmen und Datenstrukturen 2" (Algorithms and Data Structures 2) at the Johannes Kepler University,
@@ -46,4 +47,69 @@ helps students learn graph and graph flow algorithms more effectively. The tool 
 
 The interactive visualization tool should be developed with a focus on usability and educational value. It should provide a
 visually appealing and engaging experience for both lecturers and students, making it easier to teach and learn graph and graph flow algorithms.
+
+
+// full dot support (viz js cluster)
+// selected nodes with algorhytm (click on start node, calculating trace, prev/next button)
+// text editor visualizer (nope)
+// directed graph 
+layout of website (tabs, routing)
+// teaching mode (how)
+
+
+DONE gray out removed selected node button and connect selected nodes (disabled)
+connect button (nodex to nodex), different colors
+window close prevent reload or close side (to prevent losing information html intercept close)
+
+d3-graphviz dotstring
+d3-zoom
+
+directed / undirected graph -> two tabs (routing) 
+no dot support at all (maybe later)
+
+build directed tabs
+build undirected graph
+-- > return dotstring
+load dotstring and show graph
+-> Button BFS (undirected graph)
+-> DFS (undirected graph)
+-> Dijkstra (undirected graph)
+
+Build Undirected / Load from String
+Both start Dijkstra button (teaching and student)
+teaching next, next, next
+   slider and two buttons (prev and next) that are synced
+student playing mode, guess correct mode
+
+trace: TraceEntry[] = []
+TraceEntry {
+   kind: (e.g. events enter, exit...)
+}
+Possible trace for DFS:
+enter, x
+enter, y
+exit
+enter, z
+exit
+exit
+
+teacher mode:
+curEntry = 0
+stepNext():
+entry = trace[curEntry];
+execute(entry);
+curEntry++
+
+stepPrev():
+entry = trace[curEntry];
+undo(entry)
+curEntry--
+
+build_dijkstra_trace(start_node)
+   ...
+   trace.push(kind: choose_edge, payload: [a, e])
+   ...
+   ...
+final_trace = [choose edge a -> e, choose edge e -> f, choose edge e -> g]
+
 \end{document}

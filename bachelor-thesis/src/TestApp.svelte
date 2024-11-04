@@ -2,12 +2,12 @@
   import { Router, Route, link } from "svelte-routing";
   import { onMount } from "svelte";
   import StartPage from "./pages/StartPage.svelte";
+  import About from "./pages/About.svelte";
   import GraphsAndStuff from "./pages/GraphsAndStuff.svelte";
   import Visualizer from "./modes/Visualizer.svelte";
   import Presenting from "./modes/Presenting.svelte";
-  import BFS from "./algorithms/BFS.svelte"
-  import DFS from "./algorithms/DFS.svelte"
-  import Djikstra from "./algorithms/Dijkstra.svelte"
+  import BFS from "./algorithms/BFS.svelte";
+  import DFS from "./algorithms/DFS.svelte";
   import Dijkstra from "./algorithms/Dijkstra.svelte";
 
   let currentPath = window.location.pathname;
@@ -45,9 +45,9 @@
 
 <main class="main">
   <nav bind:this={navElement}>
-    <!-- Bind nav element to navElement variable -->
     <Router>
       <ul>
+        <!-- Startpage -->
         <li>
           <a
             href="/"
@@ -59,56 +59,71 @@
 
         <!-- Dropdown for Modes -->
         <li class="dropdown">
-          <a
-            href=""
-            class="nav-link"
-            class:active={currentPath.startsWith("/graphsandstuff")}>Graphs And Stuff</a
+          <div
+            class="nav-link dropdown-header"
+            class:active={currentPath.startsWith("/graphsandstuff")}
           >
+            Graphs And Stuff
+          </div>
           <div class="dropdown-content">
-            <a href="/graphsandstuff/testgraph" class="dropdown-link" use:link
-              >Test Graph</a
+            <a href="/graphsandstuff/build-undirected-graph" class="dropdown-link" use:link
+              >Build Undirected Graph</a
+            >
+            <a href="/graphsandstuff/build-directed-graph" class="dropdown-link" use:link
+              >Build Directed Graph</a
             >
             <a href="/graphsandstuff/visualizer" class="dropdown-link" use:link
               >Graph Visualizer</a
             >
-            <a href="/graphsandstuff/teaching-mode" class="dropdown-link" use:link
-              >Teaching mode</a
+            <a
+              href="/graphsandstuff/teaching-mode"
+              class="dropdown-link"
+              use:link>Teaching mode</a
             >
           </div>
         </li>
 
         <!-- Dropdown for Algorithms -->
         <li class="dropdown">
-          <a
-            href=""
-            class="nav-link"
-            class:active={currentPath.startsWith("/algorithms")}>Algorithms</a
+          <div
+            class="nav-link dropdown-header"
+            class:active={currentPath.startsWith("/algorithms")}
           >
+            Algorithms
+          </div>
           <div class="dropdown-content">
-            <a href="/algorithms/bfs" class="dropdown-link" use:link
-              >BFS</a
-            >
-            <a href="/algorithms/dfs" class="dropdown-link" use:link
-              >DFS</a
-            >
+            <a href="/algorithms/bfs" class="dropdown-link" use:link>BFS</a>
+            <a href="/algorithms/dfs" class="dropdown-link" use:link>DFS</a>
             <a href="/algorithms/dijkstra" class="dropdown-link" use:link
               >Dijkstra</a
             >
           </div>
+        </li>
+
+        <!-- About -->
+        <li>
+          <a
+            href="/about"
+            class="nav-link"
+            use:link
+            class:active={currentPath === "/about"}>About</a
+          >
         </li>
       </ul>
     </Router>
   </nav>
 
   <Router>
+    <!-- Routes -->
     <Route path="/" component={StartPage} />
-    <!-- Use About page for both dropdown links -->
-    <Route path="/graphsandstuff/testgraph" component={GraphsAndStuff} />
+    <Route path="/graphsandstuff/build-undirected-graph" component={GraphsAndStuff} directedGraph={false}/>
+    <Route path="/graphsandstuff/build-directed-graph" component={GraphsAndStuff} directedGraph={true}/>
     <Route path="/graphsandstuff/visualizer" component={Visualizer} />
     <Route path="/graphsandstuff/teaching-mode" component={Presenting} />
     <Route path="/algorithms/bfs" component={BFS} />
     <Route path="/algorithms/dfs" component={DFS} />
     <Route path="/algorithms/dijkstra" component={Dijkstra} />
+    <Route path="/about" component={About} />
   </Router>
 </main>
 
@@ -140,19 +155,36 @@
     margin-right: 1.5rem;
   }
 
-  .nav-link {
+  .nav-link,
+  .dropdown-header {
     font-size: 1.2rem;
     color: white;
     text-decoration: none;
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 1rem; /* Ensures consistent padding */
     border-radius: 5px;
     transition:
       background-color 0.3s,
       color 0.3s;
+    display: flex;
+    align-items: center; /* Vertically centers the text */
   }
 
-  .nav-link:hover {
+  .nav-link:hover,
+  .dropdown-header:hover {
     background-color: #34495e;
+  }
+
+  .dropdown-header::after {
+    content: "▼"; /* Arrow symbol */
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+    transition: transform 0.3s ease;
+    display: inline-block;
+  }
+
+  /* Rotate the arrow when hovered */
+  .dropdown:hover .dropdown-header::after {
+    transform: rotate(180deg);
   }
 
   .dropdown-content {
@@ -160,12 +192,18 @@
     position: absolute;
     background-color: #34495e;
     min-width: 160px;
-    top: calc(100% + 5px); 
+    top: 100%;
+    left: 0;
     box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
     z-index: 1;
   }
 
-  /* Dropdown links */
+  /* Ensure the dropdown stays open when hovering over header or content */
+  .dropdown:hover .dropdown-content,
+  .dropdown-content:hover {
+    display: block;
+  }
+
   .dropdown-content .dropdown-link {
     color: white;
     padding: 12px 16px;
@@ -177,20 +215,9 @@
     background-color: #3e5b6d;
   }
 
-  /* Show the dropdown on hover */
-  .dropdown:hover .dropdown-content {
-    display: block;
-  }
-
   .nav-link.active {
     background-color: #ff9e2c;
     color: white;
     font-weight: bold;
-  }
-
-  /* Highlight active dropdown links */
-  .dropdown-link.active {
-    background-color: #ff9e2c;
-    color: white;
   }
 </style>

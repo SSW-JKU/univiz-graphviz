@@ -1,15 +1,10 @@
 <script lang="ts">
   import { afterUpdate, beforeUpdate, onMount } from "svelte";
 
-  export let directedGraph: boolean;
   export let nodeLabel: string | null = null;
   export let nodeID: string | null = null;
   export let tempNodeLabel: string;
   export let labelUpdate: (newLabel: string) => void;
-
-  const toggleDirectedGraph = () => {
-    directedGraph = !directedGraph;
-  };
 
   $: if (tempNodeLabel) {
     labelUpdate(tempNodeLabel);
@@ -29,21 +24,8 @@
 <div class="menu">
   <div class="menu-header menu-margin">Settings</div>
 
-  <!-- Toggle Slider for Directed Graph -->
-  <div class="toggle-container">
-    <label class="prop-label">
-      Directed Graph
-      <input
-        type="checkbox"
-        checked={directedGraph}
-        on:change={toggleDirectedGraph}
-      />
-      <span class="slider"></span>
-    </label>
-  </div>
-
   <!-- Node Properties Section -->
-  {#if nodeLabel && nodeID}
+  {#if nodeID}
     <div class="node-properties">
       <div class="menu-header">Node Properties</div>
       <div class="prop-label">
@@ -85,16 +67,6 @@
     margin-bottom: 1rem;
   }
 
-  /* Toggle Switch Styling */
-  .toggle-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 1rem;
-    padding: 0 10px;
-  }
-
   .prop-label {
     position: relative;
     display: flex;
@@ -102,43 +74,6 @@
     font-size: 1rem;
     justify-content: space-between;
     width: 100%;
-  }
-
-  .prop-label input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .slider {
-    position: relative;
-    cursor: pointer;
-    width: 40px;
-    height: 20px;
-    background-color: #ccc;
-    border-radius: 34px;
-    transition: 0.4s;
-    margin-left: 10px; /* Add spacing between label and slider */
-  }
-
-  .slider:before {
-    position: absolute;
-    content: "";
-    height: 16px;
-    width: 16px;
-    left: 4px;
-    bottom: 2px;
-    background-color: white;
-    border-radius: 50%;
-    transition: 0.4s;
-  }
-
-  input:checked + .slider {
-    background-color: #ff9e2c;
-  }
-
-  input:checked + .slider:before {
-    transform: translateX(18px);
   }
 
   /* Label and Input styling */
