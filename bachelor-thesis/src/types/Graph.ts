@@ -12,6 +12,7 @@ export type D3Edge = {
   from: D3Node; // Starting node of the edge
   to: D3Node; // Ending node of the edge
   pos: string; //
+  weight: number | null;
 };
 
 export type GraphLayout = {
