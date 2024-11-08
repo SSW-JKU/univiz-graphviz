@@ -87,7 +87,7 @@ export const redraw = (
 				: "white"
 		)
 		.style("cursor", editable ? "pointer" : "")
-		.on("click", editable ? handleNodeClick : () => {});
+		.on("click", editable ? handleNodeClick : () => { });
 
 	g.selectAll<SVGTextElement, D3Node>("text")
 		.data(nodes, (d: D3Node) => d.id)
@@ -100,7 +100,7 @@ export const redraw = (
 		.style("fill", "black")
 		.text((d) => (d.label && d.label !== "\\N" ? d.label : d.id))
 		.style("cursor", editable ? "pointer" : "")
-		.on("click", editable ? handleNodeClick : () => {});
+		.on("click", editable ? handleNodeClick : () => { });
 
 	redrawLines(g, edges, svg, directedGraph, editable, selectedEdge);
 };
@@ -137,10 +137,13 @@ const redrawLines = (
 
 	const handleEdgeClick = (event: MouseEvent, d: D3Edge) => {
 		const edge = d3.select(`[data-edge="${d.from.id}->${d.to.id}"]`);
-		const selEdge = get(selectedEdge);
-		if (selEdge === null || selEdge !== d) {
+		const currentColor = edge.style("stroke");
+
+		if (currentColor === "black") {
+			edge.style("stroke", "red");
 			selectedEdge.set(d);
 		} else {
+			edge.style("stroke", "black");
 			selectedEdge.set(null);
 		}
 		console.log(get(selectedEdge));
@@ -164,7 +167,7 @@ const redrawLines = (
 		.style("stroke", "transparent")
 		.style("stroke-width", 20)
 		.style("cursor", "pointer")
-		.on("click", editable ? handleEdgeClick : () => {});
+		.on("click", editable ? handleEdgeClick : () => { });
 
 	// Main visible paths
 	g.selectAll<SVGPathElement, D3Edge>("path.edge")
@@ -185,6 +188,56 @@ const redrawLines = (
 		.style("stroke", (d) => (get(selectedEdge) === d ? "red" : "black"))
 		.attr("marker-end", directedGraph ? "url(#arrow)" : null)
 		.attr("data-edge", (d) => `${d.from.id}->${d.to.id}`);
+
+	// Edge weights with refined position based on `pos` data
+	g.selectAll<SVGTextElement, D3Edge>("text.edge-weight")
+		.data(edges, (d: D3Edge) => d.from.id + "_" + d.to.id)
+		.join("text")
+		.attr("class", "edge-weight")
+		.attr("x", (d) => {
+			const points = parseEdgePos(
+				d.pos,
+				svg.getBoundingClientRect().height,
+				directedGraph,
+				d.from.posX,
+				d.from.posY,
+				11
+			);
+			const midpointIndex = Math.floor(points.length / 2);
+
+			// Calculate midpoint and small offset
+			const [midX, midY] = points[midpointIndex];
+			const [nextX, nextY] = points[midpointIndex + 1] || points[midpointIndex - 1];
+			const dx = nextX - midX;
+			const dy = nextY - midY;
+			const length = Math.sqrt(dx * dx + dy * dy);
+			const offsetX = (-dy / length) * 10; // Offset perpendicular to the edge direction
+			return midX + offsetX;
+		})
+		.attr("y", (d) => {
+			const points = parseEdgePos(
+				d.pos,
+				svg.getBoundingClientRect().height,
+				directedGraph,
+				d.from.posX,
+				d.from.posY,
+				11
+			);
+			const midpointIndex = Math.floor(points.length / 2);
+
+			// Calculate midpoint and small offset
+			const [midX, midY] = points[midpointIndex];
+			const [nextX, nextY] = points[midpointIndex + 1] || points[midpointIndex - 1];
+			const dx = nextX - midX;
+			const dy = nextY - midY;
+			const length = Math.sqrt(dx * dx + dy * dy);
+			const offsetY = (dx / length) * 10; // Offset perpendicular to the edge direction
+			return midY + offsetY;
+		})
+		.text((d) => (d.weight !== null && d.weight !== -1 ? d.weight : ""))
+		.style("font-size", "12px")
+		.style("fill", "black")
+		.attr("text-anchor", "middle");
 
 	centerGroupInSvg(svg, g);
 };
@@ -215,6 +268,7 @@ const parseEdgePos = (
 	fromY: number,
 	extensionLength: number = 11
 ): [number, number][] => {
+	pos = pos.replace(/^e,/, "").trim();
 	const pointStrings = pos.split(" ").slice(1);
 	const points: [number, number][] = pointStrings.map((pointStr) => {
 		const [x, y] = pointStr.split(",").map(Number);

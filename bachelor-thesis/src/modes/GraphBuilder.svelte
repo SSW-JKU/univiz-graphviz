@@ -128,6 +128,7 @@
 				nodeLabel={$selectedNodes.length === 1 ? $selectedNodes[0].label : null}
 				nodeID={$selectedNodes.length === 1 ? $selectedNodes[0].id : null}
 				labelUpdate={updateNodeLabel}
+				selectedEdge={selectedEdge}
 			/>
 		</div>
 	</div>

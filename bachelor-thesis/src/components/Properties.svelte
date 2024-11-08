@@ -1,11 +1,15 @@
 <script lang="ts">
   import { afterUpdate, beforeUpdate, onMount } from "svelte";
+  import type { D3Edge } from "../types/Graph";
+  import type { Writable } from "svelte/store";
 
   export let nodeLabel: string | null = null;
   export let nodeID: string | null = null;
   export let tempNodeLabel: string;
   export let labelUpdate: (newLabel: string) => void;
+  export let selectedEdge: Writable<D3Edge | null>;
 
+  // Reactive statement to update node label
   $: if (tempNodeLabel) {
     labelUpdate(tempNodeLabel);
   }
@@ -18,9 +22,12 @@
       tempNodeLabel = nodeLabel;
     }
   });
+
+  selectedEdge.subscribe((selEdge) => {
+    console.log(selEdge)
+  })
 </script>
 
-<!-- Settings Title -->
 <div class="menu">
   <div class="menu-header menu-margin">Settings</div>
 
@@ -37,6 +44,27 @@
       <div class="label-container">
         <label class="prop-label" for="node-label">Label:</label>
         <input id="node-label" bind:value={tempNodeLabel} maxlength="15" />
+      </div>
+    </div>
+  {/if}
+
+  <!-- Edge Properties Section -->
+  {#if $selectedEdge}
+    <div class="edge-properties">
+      <div class="menu-header">Edge Properties</div>
+      <div class="prop-label">
+        <p>Edge:</p>
+        <p>{$selectedEdge.from.id} → {$selectedEdge.to.id}</p>
+      </div>
+
+      <div class="label-container">
+        <label class="prop-label" for="edge-weight">Weight:</label>
+        <input
+          id="edge-weight"
+          type="number"
+          bind:value={$selectedEdge.weight}
+          min="-1"
+        />
       </div>
     </div>
   {/if}
@@ -76,20 +104,19 @@
     width: 100%;
   }
 
-  /* Label and Input styling */
   .label-container {
     display: flex;
     flex-direction: row;
   }
 
-  /* The node properties section */
-  .node-properties {
+  .node-properties,
+  .edge-properties {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     width: 100%;
     padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.2); /* Light separator line */
+    border-top: 1px solid rgba(255, 255, 255, 0.2); 
   }
 
   /* Responsive styling for smaller screens */
