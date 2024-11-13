@@ -13,6 +13,9 @@ CENTER ZOOM reactively
 window size (developer menu), center again
 dropdown -> normal
 manual chunking vite
+thick edge: fill none for visibla and invisible path
+invisible path for better click handling for edge
+more points in edge/path so that curves are smoother
 
 
 In the course "Algorithmen und Datenstrukturen 2" (Algorithms and Data Structures 2) at the Johannes Kepler University,
@@ -111,5 +114,37 @@ build_dijkstra_trace(start_node)
    ...
    ...
 final_trace = [choose edge a -> e, choose edge e -> f, choose edge e -> g]
+
+
+
+
+
+
+Reset after deletion
+CSS auf SCSS or css --
+
+Path to Hanoi - Hanoi
+Table - ADd value when processing edge
+Current shortest distance to berlin - infinity; new possible distance to berlin over Hanoi, Amsterdam: 14; Update shortest path (Not in text: Or keep shortest path)
+Fix tableheader so it doesnt scroll (toprow) (table-layout: fixed)
+.table-class tr:first-child>td{
+    position: sticky;
+    top: 0;
+}
+table - column with previously visited nodes, or to distances (e.g. 9 from A, B); (e.g. infinity: not seen)
+local min (as long as not yet visited)
+
+seen edges: Map<String, List<Props>> (or Map<number, Set<String>>); metainfo[node.id].push("SEEN")
+
+unseen edge: black
+current shortest seen edge (edges between nodes, that are seen but not yet visited and their previous nodes): blue
+"walked" edge: green
+
+start node: red
+seen node: blue
+fixed node: green
+active node: green with red border
+
+addStep in djikstra (add metainfo in each step for information about nodes and edges)
 
 \end{document}

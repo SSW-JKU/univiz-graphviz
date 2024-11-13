@@ -51,46 +51,96 @@ export const redraw = (
 	editable: boolean
 ) => {
 	const { width, height } = svg.getBoundingClientRect();
-
 	const g = d3
 		.select(svg)
 		.selectAll<SVGGElement, unknown>("g")
 		.data([null]) // Dummy data to ensure only one <g> element is created
 		.join("g");
 
+	// Zoom and Drag behavior
+	const zoom = d3.zoom<SVGGElement, unknown>() // Specify the zoom behavior type here
+        .scaleExtent([0.5, 5]) // Define min and max zoom scale
+        .on("zoom", (event) => {
+            const e = event as d3.D3ZoomEvent<SVGGElement, unknown>; // Explicitly cast event
+            g.attr("transform", e.transform.toString()); // Apply zoom transformations to <g> element
+        });
+
+	// Calculate the initial translation to center the group
+	const groupBBox = g.node()?.getBBox();
+	const svgCenterX = width / 2;
+	const svgCenterY = height / 2;
+	const groupCenterX = groupBBox ? groupBBox.x + groupBBox.width / 2 : 0;
+	const groupCenterY = groupBBox ? groupBBox.y + groupBBox.height / 2 : 0;
+	const initialTranslateX = svgCenterX - groupCenterX;
+	const initialTranslateY = svgCenterY - groupCenterY;
+
+	// Apply zoom behavior to the SVG element and set initial centered transform
+	const initialTransform = d3.zoomIdentity.translate(
+		initialTranslateX,
+		initialTranslateY
+	);
+	d3.select(svg)  // Explicitly type SVGSVGElement here
+	.call(zoom as any)
+	.call(zoom.transform as any, initialTransform);
+
 	const handleNodeClick = (event: MouseEvent, d: D3Node) => {
 		// Select the corresponding ellipse element to update its fill color
-		const ellipse = d3.select(`[data-node="${d.id}"]`);
-
+		const ellipse = d3.select(`[data-node="${d.d3id}"]`);
 		const currentFill = ellipse.style("fill"); // Get current fill color
-		if (currentFill === "white" && get(selectedNodes).length < 2) {
+
+		// Get the current selected nodes
+		const currentNodes = get(selectedNodes);
+
+		// Logic for first node (always red)
+		if (currentNodes.length === 0 && currentFill === "white") {
 			ellipse.style("fill", "red");
-			selectedNodes.update((nodes) => (nodes = [...nodes, d]));
-		} else if (currentFill === "red") {
+			selectedNodes.update((nodes) => [...nodes, d]);
+		}
+		// Logic for second node (blue if editable)
+		else if (currentNodes.length === 1 && currentFill === "white" && editable) {
+			ellipse.style("fill", "blue");
+			selectedNodes.update((nodes) => [...nodes, d]);
+		}
+		// Logic for deselecting a node (clicking on a selected node again)
+		else if (currentFill === "red" || currentFill === "blue") {
 			ellipse.style("fill", "white");
-			selectedNodes.update((nodes) => nodes.filter((node) => node.id !== d.id));
+			selectedNodes.update((nodes) =>
+				nodes.filter((node) => node.d3id !== d.d3id)
+			);
+
+			// After removing a node, check if the second node should change color
+			const updatedNodes = get(selectedNodes);
+
+			// If only one node remains selected, ensure it is red
+			if (updatedNodes.length === 1) {
+				const remainingNode = updatedNodes[0];
+				const remainingEllipse = d3.select(
+					`[data-node="${remainingNode.d3id}"]`
+				);
+				remainingEllipse.style("fill", "red");
+			}
 		}
 	};
 
 	g.selectAll<SVGEllipseElement, D3Node>("ellipse")
-		.data(nodes, (d: D3Node) => d.id)
+		.data(nodes, (d: D3Node) => d.d3id)
 		.join("ellipse")
 		.attr("cx", (d) => d.posX)
 		.attr("cy", (d) => height - d.posY)
 		.attr("rx", (d) => d.width / 2)
 		.attr("ry", (d) => d.height / 2)
-		.attr("data-node", (d) => d.id)
+		.attr("data-node", (d) => d.d3id)
 		.style("stroke", "gray")
 		.style("fill", (d) =>
-			get(selectedNodes).find((selectedNode) => selectedNode.id === d.id)
+			get(selectedNodes).find((selectedNode) => selectedNode.d3id === d.d3id)
 				? "red"
 				: "white"
 		)
-		.style("cursor", editable ? "pointer" : "")
-		.on("click", editable ? handleNodeClick : () => { });
+		.style("cursor", "pointer")
+		.on("click", handleNodeClick);
 
 	g.selectAll<SVGTextElement, D3Node>("text")
-		.data(nodes, (d: D3Node) => d.id)
+		.data(nodes, (d: D3Node) => d.d3id)
 		.join("text")
 		.attr("x", (d) => d.posX)
 		.attr("y", (d) => height - d.posY)
@@ -99,8 +149,8 @@ export const redraw = (
 		.style("font-size", "12px")
 		.style("fill", "black")
 		.text((d) => (d.label && d.label !== "\\N" ? d.label : d.id))
-		.style("cursor", editable ? "pointer" : "")
-		.on("click", editable ? handleNodeClick : () => { });
+		.style("cursor", "pointer")
+		.on("click", handleNodeClick);
 
 	redrawLines(g, edges, svg, directedGraph, editable, selectedEdge);
 };
@@ -136,7 +186,7 @@ const redrawLines = (
 	addArrowMarker(svg);
 
 	const handleEdgeClick = (event: MouseEvent, d: D3Edge) => {
-		const edge = d3.select(`[data-edge="${d.from.id}->${d.to.id}"]`);
+		const edge = d3.select(`[data-edge="${d.from.d3id}->${d.to.d3id}"]`);
 		const currentColor = edge.style("stroke");
 
 		if (currentColor === "black") {
@@ -146,12 +196,11 @@ const redrawLines = (
 			edge.style("stroke", "black");
 			selectedEdge.set(null);
 		}
-		console.log(get(selectedEdge));
 	};
 
 	// Invisible, thicker paths for easier clicks
 	g.selectAll<SVGPathElement, D3Edge>("path.hitbox")
-		.data(edges, (d: D3Edge) => d.from.id + "_" + d.to.id)
+		.data(edges, (d: D3Edge) => d.from.d3id + "_" + d.to.d3id)
 		.join("path")
 		.attr("class", "hitbox")
 		.attr("d", (d) => {
@@ -165,13 +214,14 @@ const redrawLines = (
 			return lineGenerator(points);
 		})
 		.style("stroke", "transparent")
+		.style("fill", "none")
 		.style("stroke-width", 20)
 		.style("cursor", "pointer")
-		.on("click", editable ? handleEdgeClick : () => { });
+		.on("click", editable ? handleEdgeClick : () => {});
 
 	// Main visible paths
 	g.selectAll<SVGPathElement, D3Edge>("path.edge")
-		.data(edges, (d: D3Edge) => d.from.id + "_" + d.to.id)
+		.data(edges, (d: D3Edge) => d.from.d3id + "_" + d.to.d3id)
 		.join("path")
 		.attr("class", "edge")
 		.attr("d", (d) => {
@@ -186,53 +236,56 @@ const redrawLines = (
 		})
 		.style("fill", "none")
 		.style("stroke", (d) => (get(selectedEdge) === d ? "red" : "black"))
+		.style("stroke-width", 1)
 		.attr("marker-end", directedGraph ? "url(#arrow)" : null)
-		.attr("data-edge", (d) => `${d.from.id}->${d.to.id}`);
+		.attr("data-edge", (d) => `${d.from.d3id}->${d.to.d3id}`);
 
 	// Edge weights with refined position based on `pos` data
 	g.selectAll<SVGTextElement, D3Edge>("text.edge-weight")
-		.data(edges, (d: D3Edge) => d.from.id + "_" + d.to.id)
+		.data(edges, (d: D3Edge) => d.from.d3id + "_" + d.to.d3id)
 		.join("text")
 		.attr("class", "edge-weight")
 		.attr("x", (d) => {
-			const points = parseEdgePos(
-				d.pos,
-				svg.getBoundingClientRect().height,
-				directedGraph,
-				d.from.posX,
-				d.from.posY,
-				11
-			);
-			const midpointIndex = Math.floor(points.length / 2);
+			const pathElement = d3
+				.select(`[data-edge="${d.from.d3id}->${d.to.d3id}"]`)
+				.node() as SVGPathElement;
+			if (pathElement && typeof pathElement.getTotalLength === "function") {
+				const length = pathElement.getTotalLength();
+				const midpoint = pathElement.getPointAtLength(length / 2);
 
-			// Calculate midpoint and small offset
-			const [midX, midY] = points[midpointIndex];
-			const [nextX, nextY] = points[midpointIndex + 1] || points[midpointIndex - 1];
-			const dx = nextX - midX;
-			const dy = nextY - midY;
-			const length = Math.sqrt(dx * dx + dy * dy);
-			const offsetX = (-dy / length) * 10; // Offset perpendicular to the edge direction
-			return midX + offsetX;
+				// Determine the tangent direction for offset
+				const pointBefore = pathElement.getPointAtLength(length / 2 - 1);
+				const pointAfter = pathElement.getPointAtLength(length / 2 + 1);
+				const dx = pointAfter.x - pointBefore.x;
+				const dy = pointAfter.y - pointBefore.y;
+				const tangentLength = Math.sqrt(dx * dx + dy * dy);
+
+				// Perpendicular offset calculation
+				const offsetX = (-dy / tangentLength) * 10; // Adjust 10 for more or less distance from the line
+				return midpoint.x + offsetX;
+			}
+			return 0;
 		})
 		.attr("y", (d) => {
-			const points = parseEdgePos(
-				d.pos,
-				svg.getBoundingClientRect().height,
-				directedGraph,
-				d.from.posX,
-				d.from.posY,
-				11
-			);
-			const midpointIndex = Math.floor(points.length / 2);
+			const pathElement = d3
+				.select(`[data-edge="${d.from.d3id}->${d.to.d3id}"]`)
+				.node() as SVGPathElement;
+			if (pathElement && typeof pathElement.getTotalLength === "function") {
+				const length = pathElement.getTotalLength();
+				const midpoint = pathElement.getPointAtLength(length / 2);
 
-			// Calculate midpoint and small offset
-			const [midX, midY] = points[midpointIndex];
-			const [nextX, nextY] = points[midpointIndex + 1] || points[midpointIndex - 1];
-			const dx = nextX - midX;
-			const dy = nextY - midY;
-			const length = Math.sqrt(dx * dx + dy * dy);
-			const offsetY = (dx / length) * 10; // Offset perpendicular to the edge direction
-			return midY + offsetY;
+				// Determine the tangent direction for offset
+				const pointBefore = pathElement.getPointAtLength(length / 2 - 1);
+				const pointAfter = pathElement.getPointAtLength(length / 2 + 1);
+				const dx = pointAfter.x - pointBefore.x;
+				const dy = pointAfter.y - pointBefore.y;
+				const tangentLength = Math.sqrt(dx * dx + dy * dy);
+
+				// Perpendicular offset calculation
+				const offsetY = (dx / tangentLength) * 10; // Adjust 10 for more or less distance from the line
+				return midpoint.y + offsetY;
+			}
+			return 0;
 		})
 		.text((d) => (d.weight !== null && d.weight !== -1 ? d.weight : ""))
 		.style("font-size", "12px")
@@ -309,14 +362,18 @@ export const getDotSrc = (
 	const nodeLabels = nodes.map((node) => {
 		let labelString = `${node.id}`;
 		if (node.label) {
-			labelString += ` label="${node.label}"`;
+			labelString += ` [label="${node.label}"]`;
 		}
 		return labelString;
 	});
 	const edgeLabels = edges.map((edge) => {
 		let labelString = `${edge.from.id}`;
 		labelString += " -> ";
-		return (labelString += `${edge.to.id}`);
+		labelString += `${edge.to.id}`;
+		if (edge.weight && edge.weight > 0) {
+			labelString += ` [weight=${edge.weight}]`;
+		}
+		return labelString;
 	});
 	const graphType = "digraph";
 	const dotSrc = `${graphType} { \nsplines=true;\n${nodeLabels.join(
