@@ -45,7 +45,7 @@ export const redraw = (
 	svg: SVGElement,
 	nodes: D3Node[],
 	edges: D3Edge[],
-	selectedNodes: Writable<D3Node[]>,
+	selectedNodes: Writable<D3Node[]> | null,
 	selectedEdge: Writable<D3Edge | null>,
 	directedGraph: boolean,
 	editable: boolean
@@ -58,12 +58,13 @@ export const redraw = (
 		.join("g");
 
 	// Zoom and Drag behavior
-	const zoom = d3.zoom<SVGGElement, unknown>() // Specify the zoom behavior type here
-        .scaleExtent([0.5, 5]) // Define min and max zoom scale
-        .on("zoom", (event) => {
-            const e = event as d3.D3ZoomEvent<SVGGElement, unknown>; // Explicitly cast event
-            g.attr("transform", e.transform.toString()); // Apply zoom transformations to <g> element
-        });
+	const zoom = d3
+		.zoom<SVGGElement, unknown>() // Specify the zoom behavior type here
+		.scaleExtent([0.5, 5]) // Define min and max zoom scale
+		.on("zoom", (event) => {
+			const e = event as d3.D3ZoomEvent<SVGGElement, unknown>; // Explicitly cast event
+			g.attr("transform", e.transform.toString()); // Apply zoom transformations to <g> element
+		});
 
 	// Calculate the initial translation to center the group
 	const groupBBox = g.node()?.getBBox();
@@ -79,45 +80,51 @@ export const redraw = (
 		initialTranslateX,
 		initialTranslateY
 	);
-	d3.select(svg)  // Explicitly type SVGSVGElement here
-	.call(zoom as any)
-	.call(zoom.transform as any, initialTransform);
+	d3.select(svg) // Explicitly type SVGSVGElement here
+		.call(zoom as any)
+		.call(zoom.transform as any, initialTransform);
 
 	const handleNodeClick = (event: MouseEvent, d: D3Node) => {
 		// Select the corresponding ellipse element to update its fill color
 		const ellipse = d3.select(`[data-node="${d.d3id}"]`);
 		const currentFill = ellipse.style("fill"); // Get current fill color
 
-		// Get the current selected nodes
-		const currentNodes = get(selectedNodes);
+		if (selectedNodes) {
+			// Get the current selected nodes
+			const currentNodes = get(selectedNodes);
 
-		// Logic for first node (always red)
-		if (currentNodes.length === 0 && currentFill === "white") {
-			ellipse.style("fill", "red");
-			selectedNodes.update((nodes) => [...nodes, d]);
-		}
-		// Logic for second node (blue if editable)
-		else if (currentNodes.length === 1 && currentFill === "white" && editable) {
-			ellipse.style("fill", "blue");
-			selectedNodes.update((nodes) => [...nodes, d]);
-		}
-		// Logic for deselecting a node (clicking on a selected node again)
-		else if (currentFill === "red" || currentFill === "blue") {
-			ellipse.style("fill", "white");
-			selectedNodes.update((nodes) =>
-				nodes.filter((node) => node.d3id !== d.d3id)
-			);
-
-			// After removing a node, check if the second node should change color
-			const updatedNodes = get(selectedNodes);
-
-			// If only one node remains selected, ensure it is red
-			if (updatedNodes.length === 1) {
-				const remainingNode = updatedNodes[0];
-				const remainingEllipse = d3.select(
-					`[data-node="${remainingNode.d3id}"]`
+			// Logic for first node (always red)
+			if (currentNodes.length === 0 && currentFill === "white") {
+				ellipse.style("fill", "red");
+				selectedNodes.update((nodes) => [...nodes, d]);
+			}
+			// Logic for second node (blue if editable)
+			else if (
+				currentNodes.length === 1 &&
+				currentFill === "white" &&
+				editable
+			) {
+				ellipse.style("fill", "blue");
+				selectedNodes.update((nodes) => [...nodes, d]);
+			}
+			// Logic for deselecting a node (clicking on a selected node again)
+			else if (currentFill === "red" || currentFill === "blue") {
+				ellipse.style("fill", "white");
+				selectedNodes.update((nodes) =>
+					nodes.filter((node) => node.d3id !== d.d3id)
 				);
-				remainingEllipse.style("fill", "red");
+
+				// After removing a node, check if the second node should change color
+				const updatedNodes = get(selectedNodes);
+
+				// If only one node remains selected, ensure it is red
+				if (updatedNodes.length === 1) {
+					const remainingNode = updatedNodes[0];
+					const remainingEllipse = d3.select(
+						`[data-node="${remainingNode.d3id}"]`
+					);
+					remainingEllipse.style("fill", "red");
+				}
 			}
 		}
 	};
@@ -132,11 +139,12 @@ export const redraw = (
 		.attr("data-node", (d) => d.d3id)
 		.style("stroke", "gray")
 		.style("fill", (d) =>
+			selectedNodes &&
 			get(selectedNodes).find((selectedNode) => selectedNode.d3id === d.d3id)
 				? "red"
 				: "white"
 		)
-		.style("cursor", "pointer")
+		.style("cursor", editable ? "pointer" : "auto")
 		.on("click", handleNodeClick);
 
 	g.selectAll<SVGTextElement, D3Node>("text")
@@ -149,7 +157,7 @@ export const redraw = (
 		.style("font-size", "12px")
 		.style("fill", "black")
 		.text((d) => (d.label && d.label !== "\\N" ? d.label : d.id))
-		.style("cursor", "pointer")
+		.style("cursor", editable ? "pointer" : "auto")
 		.on("click", handleNodeClick);
 
 	redrawLines(g, edges, svg, directedGraph, editable, selectedEdge);
@@ -216,7 +224,7 @@ const redrawLines = (
 		.style("stroke", "transparent")
 		.style("fill", "none")
 		.style("stroke-width", 20)
-		.style("cursor", "pointer")
+		.style("cursor", editable ? "pointer" : "auto")
 		.on("click", editable ? handleEdgeClick : () => {});
 
 	// Main visible paths

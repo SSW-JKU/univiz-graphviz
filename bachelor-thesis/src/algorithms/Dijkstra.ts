@@ -1,14 +1,5 @@
 import type { D3Edge, D3Node } from "../types/Graph";
-
-export interface DijkstraStep {
-	currentNode: number | null;
-	currentEdge: [number, number] | null;
-	distances: Record<number, number>;
-	previous: Record<number, number | null>;
-	visitedNodes: Set<number>;
-	visitedEdges: Array<[number, number]>; // Array of tuples for visited edges
-	description: string;
-}
+import type { AlgorithmStep } from "./types";
 
 export const dijkstra = (
 	nodes: D3Node[],
@@ -17,13 +8,14 @@ export const dijkstra = (
 ): {
 	distances: Record<number, number>;
 	previous: Record<number, number | null>;
-	steps: DijkstraStep[];
+	steps: AlgorithmStep[];
 } => {
 	const distances: Record<number, number> = {};
 	const previous: Record<number, number | null> = {};
 	const visitedNodes = new Set<number>();
 	const visitedEdges: Array<[number, number]> = []; // Array of tuples for edges
-	const steps: DijkstraStep[] = [];
+	const selectedEdges: Array<[number, number]> = [];
+	const steps: AlgorithmStep[] = [];
 	const unvisited = new Set<number>();
 
 	nodes.forEach((node) => {
@@ -43,13 +35,23 @@ export const dijkstra = (
 		currentEdge: [number, number] | null,
 		description: string
 	) => {
+		const distancesWithDots: Record<number, number | string> = {};
+		Object.keys(distances).forEach((key) => {
+			const nodeId = Number(key);
+			// If distance remains unchanged, represent it with a dot
+			distancesWithDots[nodeId] = visitedNodes.has(nodeId)
+				? "."
+				: distances[nodeId];
+		});
+
 		steps.push({
 			currentNode,
 			currentEdge,
-			distances: { ...distances },
+			distances: distancesWithDots,
 			previous: { ...previous },
 			visitedNodes: new Set(visitedNodes),
 			visitedEdges: [...visitedEdges], // Clone the visitedEdges array
+			selectedEdges: [...selectedEdges],
 			description,
 		});
 	};
@@ -72,6 +74,7 @@ export const dijkstra = (
 
 		if (previous[currentId] !== null) {
 			const finalizedEdge: [number, number] = [previous[currentId]!, currentId];
+			removeFinalizedEdge(finalizedEdge, selectedEdges);
 			visitedEdges.push(finalizedEdge);
 		}
 
@@ -91,6 +94,8 @@ export const dijkstra = (
 			const currentEdge: [number, number] = [currentId, node];
 			const targetLabel = findNodeLabel(node);
 			const currentLabel = findNodeLabel(currentId);
+
+			selectedEdges.push(currentEdge);
 
 			if (alt < distances[node]) {
 				const previousDistance = distances[node];
@@ -120,7 +125,6 @@ export const dijkstra = (
 		null,
 		"Dijkstra's algorithm finished. All shortest paths from the start node have been determined."
 	);
-
 	return { distances, previous, steps };
 };
 
@@ -155,4 +159,53 @@ export const getShortestPath = (
 	}
 
 	return path;
+};
+
+/**
+ * Removes a finalized edge from the selectedEdges array if it exists.
+ * @param finalizedEdge - The edge to be removed, represented as a tuple [number, number].
+ * @param selectedEdges - The array of currently selected edges.
+ */
+const removeFinalizedEdge = (
+	finalizedEdge: [number, number],
+	selectedEdges: Array<[number, number]>
+) => {
+	const edgeIndex = selectedEdges.findIndex(
+		(edge) =>
+			(edge[0] === finalizedEdge[0] && edge[1] === finalizedEdge[1]) ||
+			(edge[0] === finalizedEdge[1] && edge[1] === finalizedEdge[0]) // Check both directions
+	);
+
+	if (edgeIndex !== -1) {
+		selectedEdges.splice(edgeIndex, 1); // Remove the edge if it exists
+	}
+};
+
+export const removeEdge = (
+	edges: D3Edge[],
+	selEdges: Array<[number, number]>,
+	selEdge: [number, number]
+) => {
+	const d3Edge = getEdge(edges, selEdge[0], selEdge[1]);
+	const index = selEdges.findIndex(
+		(edge) => edge[0] === d3Edge?.from.d3id && edge[1] === d3Edge.to.d3id
+	);
+	if (index !== -1) {
+		selEdges.splice(index, 1);
+	}
+};
+
+// Helper function to find an edge between two nodes
+export const getEdge = (
+	edges: D3Edge[],
+	fromId: number,
+	toId: number
+): D3Edge | null => {
+	return (
+		edges.find(
+			(edge) =>
+				(edge.from.d3id === fromId && edge.to.d3id === toId) ||
+				(edge.from.d3id === toId && edge.to.d3id === fromId)
+		) || null
+	);
 };

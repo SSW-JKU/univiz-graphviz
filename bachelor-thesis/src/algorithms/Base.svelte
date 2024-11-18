@@ -1,0 +1,503 @@
+<script lang="ts">
+	import { instance, type Viz } from "@viz-js/viz";
+	import { convertDotSrc } from "../components/GraphRenderer";
+	import type { D3Edge, D3Node, EdgeLayout } from "../types/Graph";
+	import { writable, get } from "svelte/store";
+	import { onMount, onDestroy } from "svelte";
+	import * as d3 from "d3";
+	import "d3-graphviz";
+	import { dijkstra, getEdge, removeEdge } from "../algorithms/Dijkstra";
+
+	// CodeMirror imports
+	import { EditorState } from "@codemirror/state";
+	import { EditorView, lineNumbers } from "@codemirror/view";
+	import { dot } from "@viz-js/lang-dot";
+	import { indentOnInput } from "@codemirror/language";
+	import { redraw } from "../modes/GraphBuilder";
+	import { bfs } from "../algorithms/BFS";
+	import { dfs } from "../algorithms/DFS";
+	import type { AlgorithmStep, TableRows } from "../algorithms/types";
+	import DijkstraTable from "../components/DijkstraTable.svelte";
+
+	let svg: SVGElement;
+	let edgeLayout: EdgeLayout[];
+	const selectedNodes = writable<D3Node[]>([]);
+	let selectedEdge = writable<D3Edge | null>(null);
+	let viz: Viz;
+
+	let dotSrc: string = "";
+	let nodes: D3Node[] = [];
+	let edges: D3Edge[] = [];
+	let directedGraph: boolean = false;
+	let errorMessage: string = "";
+	let editor: EditorView;
+	let editorContainer: HTMLDivElement;
+
+	export let algorithm: string = "dijkstra";
+
+	// Variables for Teacher Mode
+	let steps: AlgorithmStep[] = [];
+	let currentStepIndex = 0;
+	let currentDescription: string = "";
+	let startNodeID: number | null = null;
+
+	// Flags for mode states
+	export let isTeacherMode = false;
+
+	// Collapsible panel state
+	let showEditor = true;
+	let showTable = true;
+
+	// Table display configuration
+	export let headersStart: string[] = [];
+	export let headersScrollable: string[] = [];
+
+	let tableRows: TableRows;
+
+	export let calcRowData: (
+		nodes: D3Node[],
+		step: AlgorithmStep
+	) => {
+		rowsStart: string[][];
+		rowsScrollable: string[][];
+	};
+
+	// Function to initialize headers for distances
+	const initializeTableHeaders = (nodes: D3Node[]) => {
+		headersScrollable = nodes.map((node) => `d(${node.label || node.id})`);
+		headersScrollable.push("Local Min");
+	};
+
+	onMount(() => {
+		(async () => {
+			viz = await instance();
+			editor = new EditorView({
+				state: EditorState.create({
+					doc: dotSrc,
+					extensions: [
+						lineNumbers(),
+						dot(),
+						indentOnInput(),
+						EditorView.updateListener.of((update) => {
+							if (update.docChanged) {
+								dotSrc = editor.state.doc.toString();
+								updateGraph();
+							}
+						}),
+					],
+				}),
+				parent: editorContainer,
+			});
+		})();
+	});
+
+	onDestroy(() => {
+		editor.destroy();
+	});
+
+	const updateGraph = async () => {
+		if (dotSrc && viz) {
+			try {
+				const isUndirected = /\bgraph\b/g.test(dotSrc);
+				let dotSrcReplace = isUndirected
+					? dotSrc.replaceAll("--", "->").replaceAll("graph", "digraph")
+					: dotSrc;
+				directedGraph = !isUndirected;
+
+				[nodes, edges] = convertDotSrc(dotSrcReplace, viz);
+				redraw(
+					svg,
+					nodes,
+					edges,
+					selectedNodes,
+					selectedEdge,
+					directedGraph,
+					false
+				);
+				errorMessage = "";
+			} catch (error) {
+				errorMessage =
+					error instanceof Error
+						? "Please enter a valid DOT string! " + error.message
+						: "";
+			}
+		}
+	};
+
+	const runAlgorithm = () => {
+		const selected = get(selectedNodes);
+		if (selected.length === 1) {
+			const startNode = selected[0];
+			startNodeID = startNode.d3id;
+			steps = [];
+			if (algorithm === "dijkstra") {
+				steps = dijkstra(nodes, edges, startNode.d3id).steps;
+			} else if (algorithm === "bfs") {
+				steps = bfs(nodes, edges, startNode.d3id).steps;
+			} else if (algorithm === "dfs") {
+				steps = dfs(nodes, edges, startNode.d3id).steps;
+			}
+			currentStepIndex = 0;
+			isTeacherMode = true;
+			resetGraph();
+			d3.selectAll("[data-node]").style("cursor", "auto").on("click", null);
+			d3.selectAll("[data-edge]").style("cursor", "auto").on("click", null);
+			d3.selectAll("text").style("cursor", "auto").on("click", null);
+			highlightStep(steps[currentStepIndex]);
+			initializeTableHeaders(nodes);
+		} else {
+			console.log("Please select exactly one node to start.");
+		}
+		// console.log(headersStart, headersScrollable, headersEnd, rowsStart, rowsScrollable, rowsEnd)
+		selectedNodes.set([]);
+	};
+
+	const edgeExists = (
+		edges: Array<[number, number]>,
+		edge: [number, number]
+	): boolean => {
+		return edges.some(
+			(e) =>
+				(e[0] === edge[0] && e[1] === edge[1]) ||
+				(e[0] === edge[1] && e[1] === edge[0])
+		);
+	};
+
+	const highlightStep = (step: AlgorithmStep) => {
+		currentDescription = step.description;
+
+		// Reset all nodes and edges to their original state before highlighting
+		d3.selectAll("[data-node]")
+			.style("fill", "white")
+			.style("stroke", "gray")
+			.style("stroke-width", "1px");
+
+		d3.selectAll("[data-edge]")
+			.style("stroke", "black")
+			.style("stroke-width", "1px");
+
+		// Highlight the start node in red, if applicable
+		if (startNodeID !== null) {
+			d3.select(`[data-node="${startNodeID}"]`)
+				.style("fill", "red")
+				.style("stroke", "black")
+				.style("stroke-width", "1px");
+		}
+
+		// Highlight the active node (current node) with a distinct style
+		if (step.currentNode !== null) {
+			d3.select(`[data-node="${step.currentNode}"]`)
+				.style("stroke", "red")
+				.style("stroke-width", "2px");
+		}
+
+		// Highlight the current edge being evaluated, if applicable
+		if (step.currentEdge !== null) {
+			const curEdge = getEdge(edges, step.currentEdge[0], step.currentEdge[1]);
+			if (curEdge) {
+				d3.select(`[data-edge="${curEdge.from.d3id}->${curEdge.to.d3id}"]`)
+					.style("stroke", "blue")
+					.style("stroke-width", "3px");
+			}
+		}
+
+		// Highlight edges that are part of the visited path in green
+		for (const visitedEdge of step.visitedEdges) {
+			const curEdge = getEdge(edges, visitedEdge[0], visitedEdge[1]);
+			if (curEdge) {
+				d3.select(`[data-edge="${curEdge.from.d3id}->${curEdge.to.d3id}"]`)
+					.style("stroke", "green")
+					.style("stroke-width", "3px");
+			}
+		}
+
+		// Highlight edges that are visited but not walked in blue
+		for (const selEdge of step.selectedEdges) {
+			const curEdge = getEdge(edges, selEdge[0], selEdge[1]);
+			if (curEdge) {
+				d3.select(`[data-edge="${curEdge.from.d3id}->${curEdge.to.d3id}"]`)
+					.style("stroke", "blue")
+					.style("stroke-width", "3px");
+			}
+		}
+
+		// Highlight nodes that are fully visited in green, except the current node
+		for (const visitedNode of step.visitedNodes) {
+			if (visitedNode !== step.currentNode) {
+				d3.select(`[data-node="${visitedNode}"]`)
+					.style("stroke", "green")
+					.style("stroke-width", "3px");
+			}
+		}
+		tableRows = calcRowData(nodes, step);
+		console.log(step);
+	};
+
+	const nextStep = () => {
+		if (currentStepIndex < steps.length - 1) {
+			currentStepIndex++;
+			highlightStep(steps[currentStepIndex]);
+		}
+	};
+
+	const previousStep = () => {
+		if (currentStepIndex > 0) {
+			const curEdge = steps[currentStepIndex].currentEdge;
+			currentStepIndex--;
+			highlightStep(steps[currentStepIndex]);
+		}
+	};
+
+	const resetGraph = () => {
+		d3.selectAll("[data-node]")
+			.style("stroke", "gray")
+			.style("stroke-width", "1px");
+		redraw(
+			svg,
+			nodes,
+			edges,
+			selectedNodes,
+			selectedEdge,
+			directedGraph,
+			false
+		);
+		currentDescription = "";
+	};
+
+	const exitTeacherMode = () => {
+		isTeacherMode = false;
+		resetGraph();
+		currentDescription = "";
+	};
+
+	const findNodeByD3ID = (gvid: number): D3Node | undefined => {
+		return nodes.find((node) => node.d3id === gvid);
+	};
+
+	// Function to toggle editor and table visibility
+	const toggleEditor = () => {
+		showEditor = !showEditor;
+		if (showEditor && editor) {
+			editor.focus();
+		}
+	};
+
+	const toggleTable = () => (showTable = !showTable);
+
+	const handleSliderChange = (event: Event) => {
+		const sliderValue = Number((event.target as HTMLInputElement).value);
+
+		// Determine if we're moving forward or backward
+		const stepDifference = sliderValue - currentStepIndex;
+
+		const stepTransition = async () => {
+			if (stepDifference > 0) {
+				// Incrementally go through steps
+				for (let i = currentStepIndex + 1; i <= sliderValue; i++) {
+					currentStepIndex = i;
+					highlightStep(steps[currentStepIndex]);
+					await new Promise((resolve) => setTimeout(resolve, 50)); // Add a small delay for smooth transition
+				}
+			} else if (stepDifference < 0) {
+				// Decrementally go through steps
+				for (let i = currentStepIndex - 1; i >= sliderValue; i--) {
+					currentStepIndex = i;
+					highlightStep(steps[currentStepIndex]);
+					await new Promise((resolve) => setTimeout(resolve, 50)); // Add a small delay for smooth transition
+				}
+			}
+		};
+
+		stepTransition();
+	};
+</script>
+
+<div class="container">
+	<!-- Left Sidebar with Collapsible Panels -->
+	<div class="left-sidebar">
+		<!-- Editor Panel -->
+		<div class="panel">
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<!-- svelte-ignore a11y-no-static-element-interactions -->
+			<div class="panel-header" on:click={toggleEditor}>
+				Dot Editor
+				<span class="collapse-icon">{showEditor ? "▼" : "▲"}</span>
+			</div>
+			<!-- Apply a class to control visibility instead of removing it from the DOM -->
+			<div
+				class="panel-content dot-editor {showEditor ? '' : 'hidden'}"
+				bind:this={editorContainer}
+			></div>
+			{#if errorMessage}
+				<div class="error">{errorMessage}</div>
+			{/if}
+		</div>
+
+		<!-- Table Panel -->
+		<div class="panel">
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<!-- svelte-ignore a11y-no-static-element-interactions -->
+			<div class="panel-header" on:click={toggleTable}>
+				Table
+				<span class="collapse-icon">{showTable ? "▼" : "▲"}</span>
+			</div>
+			<div class="panel-content table-container {showTable ? '' : 'hidden'}">
+				<DijkstraTable
+					headersStart={isTeacherMode ? headersStart : []}
+					headersScrollable={isTeacherMode ? headersScrollable : []}
+					rowsStart={isTeacherMode ? tableRows.rowsStart || [] : []}
+					rowsScrollable={isTeacherMode ? tableRows.rowsScrollable || [] : []}
+				/>
+			</div>
+		</div>
+	</div>
+
+	<!-- Right Side for Graph Visualization -->
+	<div class="right">
+		<svg bind:this={svg}></svg>
+		<p class="step-description">{currentDescription}</p>
+
+		<!-- Algorithm Controls -->
+		<div class="controls">
+			<button
+				on:click={runAlgorithm}
+				disabled={$selectedNodes.length !== 1 || isTeacherMode}
+			>
+				{#if $selectedNodes.length !== 1 && !isTeacherMode}
+					Please select a node to start the algorithm
+				{:else if isTeacherMode}
+					Algorithm is currently running
+				{:else}
+					Run Algorithm
+				{/if}
+			</button>
+			{#if isTeacherMode}
+				<button on:click={previousStep} disabled={currentStepIndex === 0}
+					>Previous</button
+				>
+				<input
+					type="range"
+					min="0"
+					max={steps.length - 1}
+					value={currentStepIndex}
+					on:input={handleSliderChange}
+					class="step-slider"
+				/>
+				<button
+					on:click={nextStep}
+					disabled={currentStepIndex === steps.length - 1}>Next</button
+				>
+				<button on:click={exitTeacherMode}>Exit Teacher Mode</button>
+			{/if}
+		</div>
+	</div>
+</div>
+
+<style>
+	.container {
+		display: flex;
+		height: calc(100vh - 70px); /* Subtracting navbar height */
+		width: 100%;
+	}
+
+	.left-sidebar {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		background-color: #f0f0f0;
+		box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+		max-width: 60%;
+		height: 100%; /* Ensures full height of the container */
+	}
+
+	.panel {
+		margin: 10px;
+		border: 1px solid #ccc;
+		border-radius: 5px;
+		overflow: hidden;
+		display: flex; /* Enables the content inside to grow */
+		flex-direction: column; /* Ensures panel content stacks vertically */
+	}
+
+	.panel-header {
+		background-color: #007bff;
+		color: white;
+		padding: 10px;
+		cursor: pointer;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-weight: bold;
+		position: sticky;
+		top: 0;
+		z-index: 1;
+	}
+
+	.panel-content {
+		flex-grow: 1; /* Allows the panel content to grow dynamically */
+		overflow-y: auto; /* Enables scrolling for overflowing content */
+		background-color: #fff;
+	}
+
+	.hidden {
+		display: none; /* Hides elements without removing them from the DOM */
+	}
+
+	.collapse-icon {
+		font-size: 1.2em;
+	}
+
+	.dot-editor {
+		flex-grow: 1; /* Allows the dot editor to expand if there's space */
+		background-color: #f9f9f9;
+		overflow-y: auto;
+	}
+
+	.table-container {
+		flex-grow: 1; /* Allows the table to grow dynamically */
+		overflow-y: auto; /* Enables scrolling for overflowing rows */
+	}
+
+	.right {
+		flex: 1;
+		padding: 10px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		background-color: lightgray;
+	}
+
+	svg {
+		width: 100%;
+		height: 100%;
+		background-color: white;
+		border-radius: 5px;
+	}
+
+	.controls {
+		display: flex;
+		gap: 10px;
+		margin-top: 10px;
+	}
+
+	button {
+		padding: 8px 12px;
+		font-size: 1rem;
+		color: #fff;
+		background-color: #3498db;
+		border: none;
+		border-radius: 5px;
+		cursor: pointer;
+		transition: background-color 0.3s;
+	}
+
+	button:hover {
+		background-color: #2980b9;
+	}
+
+	button:disabled {
+		background-color: #b3b3b3;
+		cursor: not-allowed;
+	}
+</style>

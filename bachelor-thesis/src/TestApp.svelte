@@ -61,24 +61,19 @@
         <li class="dropdown">
           <div
             class="nav-link dropdown-header"
-            class:active={currentPath.startsWith("/graphsandstuff")}
+            class:active={currentPath.startsWith("/graphbuilding")}
           >
-            Graphs And Stuff
+            Graph Building
           </div>
           <div class="dropdown-content">
-            <a href="/graphsandstuff/build-undirected-graph" class="dropdown-link" use:link
+            <a href="/graphbuilding/build-undirected-graph" class="dropdown-link" use:link
               >Build Undirected Graph</a
             >
-            <a href="/graphsandstuff/build-directed-graph" class="dropdown-link" use:link
+            <a href="/graphbuilding/build-directed-graph" class="dropdown-link" use:link
               >Build Directed Graph</a
             >
-            <a href="/graphsandstuff/visualizer" class="dropdown-link" use:link
+            <a href="/graphbuilding/visualizer" class="dropdown-link" use:link
               >Graph Visualizer</a
-            >
-            <a
-              href="/graphsandstuff/teaching-mode"
-              class="dropdown-link"
-              use:link>Teaching mode</a
             >
           </div>
         </li>
@@ -116,10 +111,9 @@
   <Router>
     <!-- Routes -->
     <Route path="/" component={StartPage} />
-    <Route path="/graphsandstuff/build-undirected-graph" component={GraphsAndStuff} directedGraph={false}/>
-    <Route path="/graphsandstuff/build-directed-graph" component={GraphsAndStuff} directedGraph={true}/>
-    <Route path="/graphsandstuff/visualizer" component={Visualizer} />
-    <Route path="/graphsandstuff/teaching-mode" component={Presenting} />
+    <Route path="/graphbuilding/build-undirected-graph" component={GraphsAndStuff} directedGraph={false}/>
+    <Route path="/graphbuilding/build-directed-graph" component={GraphsAndStuff} directedGraph={true}/>
+    <Route path="/graphbuilding/visualizer" component={Visualizer} />
     <Route path="/algorithms/bfs" component={BFS} />
     <Route path="/algorithms/dfs" component={DFS} />
     <Route path="/algorithms/dijkstra" component={Dijkstra} />
@@ -195,7 +189,7 @@
     top: 100%;
     left: 0;
     box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
-    z-index: 1;
+    z-index: 10;
   }
 
   /* Ensure the dropdown stays open when hovering over header or content */
