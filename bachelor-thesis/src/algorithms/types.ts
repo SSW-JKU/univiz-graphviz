@@ -14,3 +14,9 @@ export type TableRows = {
 	rowsStart: string[][];
 	rowsScrollable: string[][];
 };
+
+export enum AlgorithmMode {
+	DIJKSTRA = "DIJKSTRA",
+	BFS = "BFS",
+	DFS = "DFS",
+};

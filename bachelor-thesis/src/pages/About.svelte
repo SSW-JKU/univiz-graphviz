@@ -54,6 +54,7 @@
       easier to teach and learn graph and graph flow algorithms.
     </p>
   </div>
+  <div class="spacer"></div>
 </div>
 
 <style>
@@ -67,6 +68,7 @@
     box-sizing: border-box;
     overflow: auto;
     padding: 10px; 
+    flex-direction: column;
   }
 
   .content {
@@ -136,4 +138,9 @@
       font-size: 1rem;
     }
   }
+
+  .spacer {
+		height: 70px; /* 70 px cause of navbar TODO */
+		width: 100%; /* Ensure it spans the full width */
+	}
 </style>

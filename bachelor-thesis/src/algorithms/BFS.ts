@@ -1,71 +1,62 @@
-import type { AlgorithmStep } from "./types";
 import type { D3Edge, D3Node } from "../types/Graph";
+import { findNodeByD3ID } from "./base";
+import type { AlgorithmStep } from "./types";
 
 export const bfs = (
-	nodes: D3Node[],
-	edges: D3Edge[],
-	startId: number
-): { steps: AlgorithmStep[] } => {
-	const steps: AlgorithmStep[] = [];
-	const visitedNodes = new Set<number>();
-	const queue: number[] = [startId];
+    nodes: D3Node[],
+    edges: D3Edge[],
+    startId: number
+): {
+    steps: AlgorithmStep[];
+    visitedOrder: number[];
+} => {
+    const visitedNodes = new Set<number>();
+    const queue: number[] = [startId];
+    const steps: AlgorithmStep[] = [];
+    const visitedOrder: number[] = [];
 
-	// Helper function to add a new step
-	const addStep = (currentNode: number | null, description: string) => {
-		steps.push({
-			currentNode,
-			currentEdge: null,
-			visitedNodes: new Set(visitedNodes),
-			visitedEdges: [],
-			description,
-		});
-	};
+    const addStep = (currentNode: number | null, description: string) => {
+        steps.push({
+            currentNode,
+            currentEdge: null,
+            distances: {},
+            previous: {},
+            visitedNodes: new Set(visitedNodes),
+            visitedEdges: [],
+            selectedEdges: [],
+            description,
+        });
+    };
 
-	// Add initial step
-	addStep(null, `Starting BFS with node ${startId}.`);
+    addStep(null, "Starting Breadth-First Search.");
 
-	while (queue.length > 0) {
-		const currentId = queue.shift()!;
-		if (!visitedNodes.has(currentId)) {
-			visitedNodes.add(currentId);
+    while (queue.length > 0) {
+        const currentId = queue.shift()!;
+        if (visitedNodes.has(currentId)) continue;
 
-			// Record the current step
-			addStep(currentId, `Visiting node ${currentId}.`);
+        visitedNodes.add(currentId);
+        visitedOrder.push(currentId);
+        addStep(currentId, `Visited node ${(findNodeByD3ID(currentId, nodes)) || currentId}.`);
 
-			// Enqueue all unvisited neighbors
-			const neighbors = getNeighbors(currentId, edges);
-			for (const neighbor of neighbors) {
-				if (!visitedNodes.has(neighbor.node)) {
-					queue.push(neighbor.node);
+        const neighbors = getNeighbors(currentId, edges);
+        for (const { node } of neighbors) {
+            if (!visitedNodes.has(node) && !queue.includes(node)) {
+                queue.push(node);
+            }
+        }
+    }
 
-					// Record the edge being explored
-					steps.push({
-						currentNode: currentId,
-						currentEdge: [currentId, neighbor.node],
-						visitedNodes: new Set(visitedNodes),
-						visitedEdges: [[currentId, neighbor.node]],
-						description: `Exploring edge from ${currentId} to ${neighbor.node}.`,
-					});
-				}
-			}
-		}
-	}
-
-	// Final step
-	addStep(null, "BFS complete. All reachable nodes have been visited.");
-
-	return { steps };
+    addStep(null, "BFS complete.");
+    return { steps, visitedOrder };
 };
 
-// Helper function to get neighbors of a node along with their edge weights.
-const getNeighbors = (
-	nodeD3Id: number,
-	edges: D3Edge[]
-): { node: number; weight: number }[] => {
-	return edges
-		.filter((edge) => edge.from.d3id === nodeD3Id || edge.to.d3id === nodeD3Id)
-		.map((edge) => ({
-			node: edge.from.d3id === nodeD3Id ? edge.to.d3id : edge.from.d3id,
-			weight: Number(edge.weight ?? 1),
-		}));
+/**
+ * Helper function to get neighbors of a node along with their edge weights.
+ */
+const getNeighbors = (nodeD3Id: number, edges: D3Edge[]) => {
+    return edges
+        .filter((edge) => edge.from.d3id === nodeD3Id || edge.to.d3id === nodeD3Id)
+        .map((edge) => ({
+            node: edge.from.d3id === nodeD3Id ? edge.to.d3id : edge.from.d3id,
+        }));
 };

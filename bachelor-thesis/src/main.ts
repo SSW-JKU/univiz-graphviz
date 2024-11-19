@@ -1,6 +1,8 @@
 import "./app.css";
+import { injectCSSVariables } from "./colors/injectStyles";
 import TestApp from "./TestApp.svelte";
 
+injectCSSVariables();
 
 let app;
 const appElement = document.getElementById("app");

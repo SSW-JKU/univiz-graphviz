@@ -16,8 +16,14 @@
 	import { redraw } from "../modes/GraphBuilder";
 	import { bfs } from "../algorithms/BFS";
 	import { dfs } from "../algorithms/DFS";
-	import type { AlgorithmStep, TableRows } from "../algorithms/types";
+	import {
+		AlgorithmMode,
+		type AlgorithmStep,
+		type TableRows,
+	} from "../algorithms/types";
 	import DijkstraTable from "../components/DijkstraTable.svelte";
+	import { alg } from "@dagrejs/graphlib";
+	import { readOnlyTheme } from "./base";
 
 	let svg: SVGElement;
 	let edgeLayout: EdgeLayout[];
@@ -33,7 +39,7 @@
 	let editor: EditorView;
 	let editorContainer: HTMLDivElement;
 
-	export let algorithm: string = "dijkstra";
+	export let algorithm: AlgorithmMode;
 
 	// Variables for Teacher Mode
 	let steps: AlgorithmStep[] = [];
@@ -64,8 +70,14 @@
 
 	// Function to initialize headers for distances
 	const initializeTableHeaders = (nodes: D3Node[]) => {
-		headersScrollable = nodes.map((node) => `d(${node.label || node.id})`);
-		headersScrollable.push("Local Min");
+		if (algorithm === AlgorithmMode.DIJKSTRA) {
+			headersScrollable = nodes.map((node) => `d(${node.label || node.id})`);
+			headersScrollable.push("Local Min");
+			console.log(algorithm);
+		} else {
+			headersScrollable = nodes.map((node) => String(node.d3id));
+			console.log(algorithm);
+		}
 	};
 
 	onMount(() => {
@@ -84,6 +96,7 @@
 								updateGraph();
 							}
 						}),
+						EditorView.editable.of(!isTeacherMode),
 					],
 				}),
 				parent: editorContainer,
@@ -124,21 +137,43 @@
 		}
 	};
 
+	const updateEditorState = (writable: boolean) => {
+		const newState = EditorState.create({
+			doc: editor.state.doc.toString(), // Keep the current document
+			extensions: [
+				lineNumbers(),
+				dot(),
+				indentOnInput(),
+				EditorView.updateListener.of((update) => {
+					if (update.docChanged) {
+						dotSrc = editor.state.doc.toString();
+						updateGraph();
+					}
+				}),
+				EditorView.editable.of(!writable),
+				isTeacherMode ? readOnlyTheme : [],
+			],
+		});
+		// Apply the new state to the editor
+		editor.setState(newState);
+	};
+
 	const runAlgorithm = () => {
 		const selected = get(selectedNodes);
 		if (selected.length === 1) {
 			const startNode = selected[0];
 			startNodeID = startNode.d3id;
 			steps = [];
-			if (algorithm === "dijkstra") {
+			if (algorithm === AlgorithmMode.DIJKSTRA) {
 				steps = dijkstra(nodes, edges, startNode.d3id).steps;
-			} else if (algorithm === "bfs") {
+			} else if (algorithm === AlgorithmMode.BFS) {
 				steps = bfs(nodes, edges, startNode.d3id).steps;
-			} else if (algorithm === "dfs") {
+			} else if (algorithm === AlgorithmMode.DFS) {
 				steps = dfs(nodes, edges, startNode.d3id).steps;
 			}
 			currentStepIndex = 0;
 			isTeacherMode = true;
+			updateEditorState(isTeacherMode);
 			resetGraph();
 			d3.selectAll("[data-node]").style("cursor", "auto").on("click", null);
 			d3.selectAll("[data-edge]").style("cursor", "auto").on("click", null);
@@ -148,7 +183,6 @@
 		} else {
 			console.log("Please select exactly one node to start.");
 		}
-		// console.log(headersStart, headersScrollable, headersEnd, rowsStart, rowsScrollable, rowsEnd)
 		selectedNodes.set([]);
 	};
 
@@ -230,7 +264,6 @@
 			}
 		}
 		tableRows = calcRowData(nodes, step);
-		console.log(step);
 	};
 
 	const nextStep = () => {
@@ -266,6 +299,7 @@
 
 	const exitTeacherMode = () => {
 		isTeacherMode = false;
+		updateEditorState(isTeacherMode);
 		resetGraph();
 		currentDescription = "";
 	};
@@ -320,7 +354,7 @@
 			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<!-- svelte-ignore a11y-no-static-element-interactions -->
 			<div class="panel-header" on:click={toggleEditor}>
-				Dot Editor
+				Dot Editor - {algorithm}
 				<span class="collapse-icon">{showEditor ? "▼" : "▲"}</span>
 			</div>
 			<!-- Apply a class to control visibility instead of removing it from the DOM -->
@@ -338,7 +372,7 @@
 			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<!-- svelte-ignore a11y-no-static-element-interactions -->
 			<div class="panel-header" on:click={toggleTable}>
-				Table
+				Table - {algorithm}
 				<span class="collapse-icon">{showTable ? "▼" : "▲"}</span>
 			</div>
 			<div class="panel-content table-container {showTable ? '' : 'hidden'}">
@@ -347,6 +381,7 @@
 					headersScrollable={isTeacherMode ? headersScrollable : []}
 					rowsStart={isTeacherMode ? tableRows.rowsStart || [] : []}
 					rowsScrollable={isTeacherMode ? tableRows.rowsScrollable || [] : []}
+					algorithmMode={algorithm}
 				/>
 			</div>
 		</div>

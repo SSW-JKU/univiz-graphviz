@@ -1,8 +1,11 @@
 <script lang="ts">
+	import { AlgorithmMode } from "../algorithms/types";
+
 	export let headersStart: string[] = [];
 	export let headersScrollable: string[] = [];
 	export let rowsStart: Array<string[]> = [];
 	export let rowsScrollable: Array<string[]> = [];
+	export let algorithmMode: AlgorithmMode;
 </script>
 
 <div class="table-scroll">
@@ -18,8 +21,10 @@
 				{#each headersScrollable as header, index}
 					<th
 						scope="col"
-						class={index === headersScrollable.length - 1 ? "sticky-right" : ""}
-						>{header}</th
+						class={index === headersScrollable.length - 1 &&
+						algorithmMode === AlgorithmMode.DIJKSTRA
+							? "sticky-right"
+							: ""}>{header}</th
 					>
 				{/each}
 			</tr>
@@ -35,7 +40,8 @@
 					<!-- Scrollable Columns -->
 					{#each rowsScrollable[rowIndex] as scrollableCell, index}
 						<td
-							class={index === rowsScrollable[rowIndex].length - 1
+							class={index === rowsScrollable[rowIndex].length - 1 &&
+							algorithmMode === AlgorithmMode.DIJKSTRA
 								? "sticky-right"
 								: ""}>{scrollableCell}</td
 						>

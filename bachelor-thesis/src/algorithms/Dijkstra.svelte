@@ -2,8 +2,8 @@
 	import type { D3Node } from "../types/Graph";
 	import { findNodeByD3ID } from "./base";
 	import Base from "./Base.svelte";
-	import type { AlgorithmStep } from "./types";
-	const algorithm = "dijkstra";
+	import { AlgorithmMode, type AlgorithmStep } from "./types";
+	const algorithm = AlgorithmMode.DIJKSTRA;
 
 	const headersStart = ["Current Vertex", "Already Visited", "Not Yet Visited"];
 
