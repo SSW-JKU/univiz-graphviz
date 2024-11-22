@@ -13,7 +13,7 @@
 	import { EditorView, lineNumbers } from "@codemirror/view";
 	import { dot } from "@viz-js/lang-dot";
 	import { indentOnInput } from "@codemirror/language";
-	import { redraw } from "../modes/GraphBuilder";
+	import { redraw } from "../components/GraphBuilder";
 	import { bfs } from "../algorithms/BFS";
 	import { dfs } from "../algorithms/DFS";
 	import {
@@ -62,7 +62,8 @@
 
 	export let calcRowData: (
 		nodes: D3Node[],
-		step: AlgorithmStep
+		step: AlgorithmStep[],
+		curIndex: number
 	) => {
 		rowsStart: string[][];
 		rowsScrollable: string[][];
@@ -225,16 +226,6 @@
 				.style("stroke-width", "2px");
 		}
 
-		// Highlight the current edge being evaluated, if applicable
-		if (step.currentEdge !== null) {
-			const curEdge = getEdge(edges, step.currentEdge[0], step.currentEdge[1]);
-			if (curEdge) {
-				d3.select(`[data-edge="${curEdge.from.d3id}->${curEdge.to.d3id}"]`)
-					.style("stroke", "blue")
-					.style("stroke-width", "3px");
-			}
-		}
-
 		// Highlight edges that are part of the visited path in green
 		for (const visitedEdge of step.visitedEdges) {
 			const curEdge = getEdge(edges, visitedEdge[0], visitedEdge[1]);
@@ -245,13 +236,28 @@
 			}
 		}
 
-		// Highlight edges that are visited but not walked in blue
-		for (const selEdge of step.selectedEdges) {
-			const curEdge = getEdge(edges, selEdge[0], selEdge[1]);
-			if (curEdge) {
-				d3.select(`[data-edge="${curEdge.from.d3id}->${curEdge.to.d3id}"]`)
+		// Highlight edges in the shortestPathsToNodes as blue if not already green
+		if (step.shortestPathsToNodes) {
+			for (const edge of step.shortestPathsToNodes) {
+				const curEdge = getEdge(edges, edge[0], edge[1]);
+				if (curEdge) {
+					// Only apply blue if it's not already green
+					const edgeSelection = d3.select(
+						`[data-edge="${curEdge.from.d3id}->${curEdge.to.d3id}"]`
+					);
+					if (edgeSelection.style("stroke") !== "green") {
+						edgeSelection.style("stroke", "blue").style("stroke-width", "3px");
+					}
+				}
+			}
+		}
+
+		// Highlight nodes that are seen but not visited with a blue border
+		if (step.seenButNotVisitedNodes) {
+			for (const nodeId of step.seenButNotVisitedNodes) {
+				d3.select(`[data-node="${nodeId}"]`)
 					.style("stroke", "blue")
-					.style("stroke-width", "3px");
+					.style("stroke-width", "2px");
 			}
 		}
 
@@ -263,7 +269,18 @@
 					.style("stroke-width", "3px");
 			}
 		}
-		tableRows = calcRowData(nodes, step);
+
+		// Highlight the current edge being evaluated, if applicable
+		if (step.currentEdge !== null) {
+			const curEdge = getEdge(edges, step.currentEdge[0], step.currentEdge[1]);
+			if (curEdge) {
+				d3.select(`[data-edge="${curEdge.from.d3id}->${curEdge.to.d3id}"]`)
+					.style("stroke", "red")
+					.style("stroke-width", "3px");
+			}
+		}
+
+		tableRows = calcRowData(nodes, steps, currentStepIndex);
 	};
 
 	const nextStep = () => {
@@ -320,29 +337,8 @@
 
 	const handleSliderChange = (event: Event) => {
 		const sliderValue = Number((event.target as HTMLInputElement).value);
-
-		// Determine if we're moving forward or backward
-		const stepDifference = sliderValue - currentStepIndex;
-
-		const stepTransition = async () => {
-			if (stepDifference > 0) {
-				// Incrementally go through steps
-				for (let i = currentStepIndex + 1; i <= sliderValue; i++) {
-					currentStepIndex = i;
-					highlightStep(steps[currentStepIndex]);
-					await new Promise((resolve) => setTimeout(resolve, 50)); // Add a small delay for smooth transition
-				}
-			} else if (stepDifference < 0) {
-				// Decrementally go through steps
-				for (let i = currentStepIndex - 1; i >= sliderValue; i--) {
-					currentStepIndex = i;
-					highlightStep(steps[currentStepIndex]);
-					await new Promise((resolve) => setTimeout(resolve, 50)); // Add a small delay for smooth transition
-				}
-			}
-		};
-
-		stepTransition();
+		currentStepIndex = sliderValue;
+		highlightStep(steps[currentStepIndex]);
 	};
 </script>
 
@@ -431,7 +427,7 @@
 <style>
 	.container {
 		display: flex;
-		height: calc(100vh - 70px); /* Subtracting navbar height */
+		height: calc(100vh - var(--navbarHeight));
 		width: 100%;
 	}
 
@@ -439,24 +435,25 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		background-color: #f0f0f0;
-		box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+		background-color: var(--sidebarBackground);
+		box-shadow: inset 0 0 10px var(--sidebarShadow);
 		max-width: 60%;
-		height: 100%; /* Ensures full height of the container */
+		height: 100%;
 	}
 
 	.panel {
 		margin: 10px;
-		border: 1px solid #ccc;
+		border: 1px solid var(--panelBorder);
 		border-radius: 5px;
 		overflow: hidden;
-		display: flex; /* Enables the content inside to grow */
-		flex-direction: column; /* Ensures panel content stacks vertically */
+		display: flex;
+		flex-direction: column;
+		background-color: var(--panelBackground);
 	}
 
 	.panel-header {
-		background-color: #007bff;
-		color: white;
+		background-color: var(--panelHeaderBackground);
+		color: var(--panelHeaderText);
 		padding: 10px;
 		cursor: pointer;
 		display: flex;
@@ -469,13 +466,13 @@
 	}
 
 	.panel-content {
-		flex-grow: 1; /* Allows the panel content to grow dynamically */
-		overflow-y: auto; /* Enables scrolling for overflowing content */
-		background-color: #fff;
+		flex-grow: 1;
+		overflow-y: auto;
+		background-color: var(--white);
 	}
 
 	.hidden {
-		display: none; /* Hides elements without removing them from the DOM */
+		display: none;
 	}
 
 	.collapse-icon {
@@ -483,14 +480,14 @@
 	}
 
 	.dot-editor {
-		flex-grow: 1; /* Allows the dot editor to expand if there's space */
-		background-color: #f9f9f9;
+		flex-grow: 1;
+		background-color: var(--panelBackground);
 		overflow-y: auto;
 	}
 
 	.table-container {
-		flex-grow: 1; /* Allows the table to grow dynamically */
-		overflow-y: auto; /* Enables scrolling for overflowing rows */
+		flex-grow: 1;
+		overflow-y: auto;
 	}
 
 	.right {
@@ -500,14 +497,15 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		background-color: lightgray;
+		background-color: var(--rightBackground);
 	}
 
 	svg {
 		width: 100%;
 		height: 100%;
-		background-color: white;
+		background-color: var(--svgBackground);
 		border-radius: 5px;
+		border: 1px solid var(--svgBorder);
 	}
 
 	.controls {
@@ -519,8 +517,8 @@
 	button {
 		padding: 8px 12px;
 		font-size: 1rem;
-		color: #fff;
-		background-color: #3498db;
+		color: var(--white);
+		background-color: var(--controlBackground);
 		border: none;
 		border-radius: 5px;
 		cursor: pointer;
@@ -528,11 +526,18 @@
 	}
 
 	button:hover {
-		background-color: #2980b9;
+		background-color: var(--controlHoverBackground);
 	}
 
 	button:disabled {
-		background-color: #b3b3b3;
+		background-color: var(--buttonDisabled);
 		cursor: not-allowed;
+	}
+
+	.step-slider {
+		accent-color: var(--sliderAccent);
+	}
+	.step-slider:hover {
+		accent-color: var(--sliderHoverAccent);
 	}
 </style>

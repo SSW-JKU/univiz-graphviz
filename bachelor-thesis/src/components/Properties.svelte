@@ -77,8 +77,8 @@
 
 <style>
 	.menu {
-		background-color: #2c3e50;
-		color: white;
+		background-color: var(--generalBackground);
+		color: var(--white);
 		padding: 1rem;
 		border-radius: 5px;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);

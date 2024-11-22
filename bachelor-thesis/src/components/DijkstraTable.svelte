@@ -43,7 +43,7 @@
 							class={index === rowsScrollable[rowIndex].length - 1 &&
 							algorithmMode === AlgorithmMode.DIJKSTRA
 								? "sticky-right"
-								: ""}>{scrollableCell}</td
+								: ""}>{@html scrollableCell}</td
 						>
 					{/each}
 				</tr>
@@ -77,29 +77,30 @@
 			min-width: $sticky-column-width;
 			max-width: $sticky-column-width;
 			padding: 5px;
-			border-right: 1px solid #000; // Borders for table cells
-			border-bottom: 1px solid #000;
+			border-right: 1px solid var(--border); // Borders for table cells
+			border-bottom: 1px solid var(--border);
 			text-align: center;
+			background-color: var(--tableCellBackground); // Default cell background
 		}
 
 		thead th {
 			position: sticky;
 			top: 0;
 			z-index: 1;
-			background: #333;
-			color: #fff;
-			border-top: 2px solid #000; // Top border for headers
-			border-bottom: 2px solid #000; // Bottom border for headers
-			border-right: 2px solid #000;
+			background: var(--tableHeaderBackground); // Sticky header background
+			color: var(--tableHeaderText); // Sticky header text color
+			border-top: 2px solid var(--tableBorder); // Top border for headers
+			border-bottom: 2px solid var(--tableBorder); // Bottom border for headers
+			border-right: 2px solid var(--tableBorder);
 		}
 
 		tbody td {
-			border-right: 1px solid #000; // Right border for cells
+			border-right: 1px solid var(--tableCellBorder); // Right border for cells
 		}
 
 		tbody tr td:first-child,
 		thead tr th:first-child {
-			border-left: 2px solid #000; // Left border for the first column
+			border-left: 2px solid var(--tableBorder); // Left border for the first column
 		}
 
 		// Sticky left columns styling
@@ -110,7 +111,7 @@
 					#{$sticky-column-width} * (#{$i - 1})
 				); // Align sticky column to the left
 				z-index: 2; // Ensure sticky column stays above scrollable cells
-				background: #ccc; // Set background for sticky columns
+				background: var(--stickyColumnBackground); // Sticky column background
 			}
 
 			thead th.sticky-#{$i} {
@@ -118,8 +119,10 @@
 				top: 0;
 				left: calc(#{$sticky-column-width} * (#{$i - 1}));
 				z-index: 3; // Header cells should have a higher z-index
-				background: #333; // Match header background color
-				color: #fff;
+				background: var(
+					--stickyHeaderBackground
+				); // Match header background color
+				color: var(--stickyHeaderText); // Match header text color
 			}
 		}
 
@@ -128,8 +131,8 @@
 			position: sticky;
 			right: 0; // Sticky to the right edge
 			z-index: 2;
-			background: #ccc;
-			border-left: 1px solid #000; // Border for separation
+			background: var(--stickyColumnBackground);
+			border-left: 1px solid var(--border); // Border for separation
 		}
 
 		thead th.sticky-right {
@@ -137,9 +140,9 @@
 			top: 0;
 			right: 0; // Align to the right edge for headers
 			z-index: 3;
-			background: #333;
-			color: #fff;
-			border-left: 1px solid #000;
+			background: var(--stickyHeaderBackground);
+			color: var(--stickyHeaderText);
+			border-left: 1px solid var(--border);
 		}
 	}
 </style>

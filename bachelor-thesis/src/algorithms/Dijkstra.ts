@@ -13,11 +13,13 @@ export const dijkstra = (
 	const distances: Record<number, number> = {};
 	const previous: Record<number, number | null> = {};
 	const visitedNodes = new Set<number>();
-	const visitedEdges: Array<[number, number]> = []; // Array of tuples for edges
-	const selectedEdges: Array<[number, number]> = [];
+	const visitedEdges: Array<[number, number]> = [];
+	const shortestPathsToNodes: Array<[number, number]> = [];
 	const steps: AlgorithmStep[] = [];
 	const unvisited = new Set<number>();
+	const seenButNotVisited = new Set<number>();
 
+	// Initialize distances and unvisited set
 	nodes.forEach((node) => {
 		distances[node.d3id] = Infinity;
 		previous[node.d3id] = null;
@@ -30,6 +32,7 @@ export const dijkstra = (
 		return node?.label || node?.id || nodeId;
 	};
 
+	// Add a step with the new fields
 	const addStep = (
 		currentNode: number | null,
 		currentEdge: [number, number] | null,
@@ -38,7 +41,6 @@ export const dijkstra = (
 		const distancesWithDots: Record<number, number | string> = {};
 		Object.keys(distances).forEach((key) => {
 			const nodeId = Number(key);
-			// If distance remains unchanged, represent it with a dot
 			distancesWithDots[nodeId] = visitedNodes.has(nodeId)
 				? "."
 				: distances[nodeId];
@@ -50,8 +52,9 @@ export const dijkstra = (
 			distances: distancesWithDots,
 			previous: { ...previous },
 			visitedNodes: new Set(visitedNodes),
-			visitedEdges: [...visitedEdges], // Clone the visitedEdges array
-			selectedEdges: [...selectedEdges],
+			visitedEdges: [...visitedEdges],
+			shortestPathsToNodes: [...shortestPathsToNodes], // Track shortest paths to seen nodes
+			seenButNotVisitedNodes: Array.from(seenButNotVisited), // Track nodes seen but not visited
 			description,
 		});
 	};
@@ -63,70 +66,96 @@ export const dijkstra = (
 	);
 
 	while (unvisited.size > 0) {
-		const currentId = Array.from(unvisited).reduce((minNodeId, nodeId) =>
-			distances[nodeId] < distances[minNodeId] ? nodeId : minNodeId
-		);
+		const currentId = Array.from(unvisited)
+			.sort((a, b) => {
+				if (distances[a] !== distances[b]) {
+					return distances[a] - distances[b];
+				}
+				return String(findNodeLabel(a)).localeCompare(String(findNodeLabel(b)));
+			})[0];
 
 		if (distances[currentId] === Infinity) break;
 
 		unvisited.delete(currentId);
 		visitedNodes.add(currentId);
 
+		// Remove the current node from seenButNotVisited
+		seenButNotVisited.delete(currentId);
+
 		if (previous[currentId] !== null) {
 			const finalizedEdge: [number, number] = [previous[currentId]!, currentId];
-			removeFinalizedEdge(finalizedEdge, selectedEdges);
 			visitedEdges.push(finalizedEdge);
 		}
 
 		addStep(
 			currentId,
 			null,
-			`Visiting node ${findNodeLabel(
-				currentId
-			)} with current shortest distance ${distances[currentId]}.`
+			`Visiting node ${findNodeLabel(currentId)} with shortest distance ${distances[currentId]}.`
 		);
 
-		const neighbors = getNeighbors(currentId, edges);
+		// Process neighbors
+		const neighbors = getNeighbors(currentId, edges).sort((a, b) =>
+			String(findNodeLabel(a.node)).localeCompare(String(findNodeLabel(b.node)))
+		);
+
 		neighbors.forEach(({ node, weight }) => {
 			if (visitedNodes.has(node)) return;
 
+			// Update distances and seen but not visited nodes
 			const alt = distances[currentId] + weight;
 			const currentEdge: [number, number] = [currentId, node];
-			const targetLabel = findNodeLabel(node);
-			const currentLabel = findNodeLabel(currentId);
-
-			selectedEdges.push(currentEdge);
+			seenButNotVisited.add(node);
 
 			if (alt < distances[node]) {
-				const previousDistance = distances[node];
 				distances[node] = alt;
 				previous[node] = currentId;
+
+				// Update the shortest paths to seen nodes
+				const existingEdgeIndex = shortestPathsToNodes.findIndex(
+					(edge) => edge[1] === node
+				);
+				if (existingEdgeIndex !== -1) {
+					shortestPathsToNodes[existingEdgeIndex] = currentEdge;
+				} else {
+					shortestPathsToNodes.push(currentEdge);
+				}
 
 				addStep(
 					currentId,
 					currentEdge,
-					`Evaluating edge from ${currentLabel} to ${targetLabel}. Current shortest distance to ${targetLabel}: ${
-						previousDistance === Infinity ? "infinity" : previousDistance
-					}; new possible distance via ${currentLabel}: ${alt}. Updated shortest path to ${targetLabel}.`
+					`Updated shortest path to node ${findNodeLabel(node)} through ${findNodeLabel(
+						currentId
+					)}. Distance is now ${alt}.`
 				);
 			} else {
 				addStep(
 					currentId,
 					currentEdge,
-					`Evaluating edge from ${currentLabel} to ${targetLabel}. Current shortest distance to ${targetLabel}: ${distances[node]}; new possible distance via ${currentLabel}: ${alt}. No update to shortest path for ${targetLabel}.`
+					`Checked edge ${findNodeLabel(currentId)} -> ${findNodeLabel(
+						node
+					)}. No shorter path found.`
 				);
 			}
 		});
+
+		// Remove edges to visited nodes from shortestPathsToNodes
+		for (let i = shortestPathsToNodes.length - 1; i >= 0; i--) {
+			if (visitedNodes.has(shortestPathsToNodes[i][1])) {
+				shortestPathsToNodes.splice(i, 1);
+			}
+		}
 	}
 
-	// Final step indicating the algorithm has finished
 	addStep(
 		null,
 		null,
-		"Dijkstra's algorithm finished. All shortest paths from the start node have been determined."
+		"Dijkstra's algorithm finished. All shortest paths have been determined."
 	);
+
 	return { distances, previous, steps };
 };
+
+
 
 /**
  * Helper function to get neighbors of a node along with their edge weights.

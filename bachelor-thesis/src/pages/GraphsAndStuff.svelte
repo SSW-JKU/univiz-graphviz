@@ -1,5 +1,5 @@
 <script lang="ts">
-  import GraphBuilder from "../modes/GraphBuilder.svelte";
+  import GraphBuilder from "../components/GraphBuilder.svelte";
   export let directedGraph: boolean;
 </script>
 

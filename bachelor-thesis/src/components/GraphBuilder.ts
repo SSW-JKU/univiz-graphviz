@@ -160,7 +160,7 @@ export const redraw = (
 		.style("cursor", editable ? "pointer" : "auto")
 		.on("click", handleNodeClick);
 
-	redrawLines(g, edges, svg, directedGraph, editable, selectedEdge);
+	redrawLines(g, edges, svg, directedGraph, editable, selectedEdge, nodes);
 };
 
 const addArrowMarker = (svg: SVGElement) => {
@@ -188,7 +188,8 @@ const redrawLines = (
 	svg: SVGElement,
 	directedGraph: boolean,
 	editable: boolean,
-	selectedEdge: Writable<D3Edge | null>
+	selectedEdge: Writable<D3Edge | null>,
+	nodes: D3Node[]
 ) => {
 	const lineGenerator = d3.line().curve(d3.curveBasis);
 	addArrowMarker(svg);
@@ -261,7 +262,7 @@ const redrawLines = (
 				const length = pathElement.getTotalLength();
 				const midpoint = pathElement.getPointAtLength(length / 2);
 
-				// Determine the tangent direction for offset
+				// Calculate tangent direction and perpendicular offset
 				const pointBefore = pathElement.getPointAtLength(length / 2 - 1);
 				const pointAfter = pathElement.getPointAtLength(length / 2 + 1);
 				const dx = pointAfter.x - pointBefore.x;
@@ -269,8 +270,19 @@ const redrawLines = (
 				const tangentLength = Math.sqrt(dx * dx + dy * dy);
 
 				// Perpendicular offset calculation
-				const offsetX = (-dy / tangentLength) * 10; // Adjust 10 for more or less distance from the line
-				return midpoint.x + offsetX;
+				const offsetX = (-dy / tangentLength) * 10;
+
+				// Resolve collisions and flip if needed
+				const adjusted = adjustForCollision(
+					midpoint.x + offsetX,
+					midpoint.y,
+					nodes,
+					10,
+					dx,
+					dy
+				);
+
+				return adjusted.x;
 			}
 			return 0;
 		})
@@ -282,7 +294,7 @@ const redrawLines = (
 				const length = pathElement.getTotalLength();
 				const midpoint = pathElement.getPointAtLength(length / 2);
 
-				// Determine the tangent direction for offset
+				// Calculate tangent direction and perpendicular offset
 				const pointBefore = pathElement.getPointAtLength(length / 2 - 1);
 				const pointAfter = pathElement.getPointAtLength(length / 2 + 1);
 				const dx = pointAfter.x - pointBefore.x;
@@ -290,8 +302,19 @@ const redrawLines = (
 				const tangentLength = Math.sqrt(dx * dx + dy * dy);
 
 				// Perpendicular offset calculation
-				const offsetY = (dx / tangentLength) * 10; // Adjust 10 for more or less distance from the line
-				return midpoint.y + offsetY;
+				const offsetY = (dx / tangentLength) * 10;
+
+				// Resolve collisions and flip if needed
+				const adjusted = adjustForCollision(
+					midpoint.x,
+					midpoint.y + offsetY,
+					nodes,
+					10,
+					dx,
+					dy
+				);
+
+				return adjusted.y;
 			}
 			return 0;
 		})
@@ -301,6 +324,33 @@ const redrawLines = (
 		.attr("text-anchor", "middle");
 
 	centerGroupInSvg(svg, g);
+};
+
+const adjustForCollision = (
+	x: number,
+	y: number,
+	nodes: D3Node[],
+	padding: number,
+	dx: number,
+	dy: number
+) => {
+	let adjustedX = x;
+	let adjustedY = y;
+
+	nodes.forEach((node) => {
+		const nodeRadius = Math.max(node.width / 2, node.height / 2) + padding;
+		const distanceX = adjustedX - node.posX;
+		const distanceY = adjustedY - node.posY;
+		const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+
+		if (distance < nodeRadius) {
+			// Flip the label to the opposite side of the edge
+			adjustedX = x - dx * 20; // Flip along the X-axis
+			adjustedY = y - dy * 20; // Flip along the Y-axis
+		}
+	});
+
+	return { x: adjustedX, y: adjustedY };
 };
 
 const centerGroupInSvg = (

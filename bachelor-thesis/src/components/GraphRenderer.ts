@@ -1,6 +1,6 @@
 import * as dot from "graphlib-dot";
 import type { D3Edge, D3Node, GraphLayout, NodeObject } from "../types/Graph";
-import { createNode } from "../modes/GraphBuilder";
+import { createNode } from "./GraphBuilder";
 import { instance, type Viz } from "@viz-js/viz";
 
 export const convertDotSrc = (

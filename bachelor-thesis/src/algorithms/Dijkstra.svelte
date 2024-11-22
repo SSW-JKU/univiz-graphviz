@@ -3,6 +3,7 @@
 	import { findNodeByD3ID } from "./base";
 	import Base from "./Base.svelte";
 	import { AlgorithmMode, type AlgorithmStep } from "./types";
+
 	const algorithm = AlgorithmMode.DIJKSTRA;
 
 	const headersStart = ["Current Vertex", "Already Visited", "Not Yet Visited"];
@@ -47,51 +48,120 @@
 		return minValue;
 	};
 
-	const calcRowData = (nodes: D3Node[], step: AlgorithmStep) => {
-		// Process data only if `currentNode` is not null or undefined
-		if (step.currentNode !== null && step.currentNode !== undefined) {
-			// Get visited nodes by converting their IDs to labels
-			const visitedNodeD3IDs: number[] = step.visitedNodes.values().toArray();
+	const reconstructPath = (
+		nodeId: number,
+		previous: Record<number, number | null>,
+		nodes: D3Node[]
+	): string => {
+		const path = [];
+		let current: number | null = nodeId;
+		while (current !== null) {
+			path.unshift(findNodeByD3ID(current, nodes) || String(current));
+			current = previous[current];
+		}
+		return path.join("<br>");
+	};
 
-			// Remove entries from `rowMap` if their key is not in `visitedNodeD3IDs`
-			rowMap.forEach((_, key) => {
-				if (!visitedNodeD3IDs.includes(key)) {
-					rowMap.delete(key);
-				}
-			});
+	const calcRowDataForIndex = (
+		nodes: D3Node[],
+		steps: AlgorithmStep[],
+		curIndex: number
+	) => {
+		// Map to maintain row data state
+		const rowMap = new Map<
+			number,
+			{
+				vv: string[];
+				nv: string[];
+				distances: (string | number)[];
+				paths: string[]; // Separate paths for each node
+				localMin: number | string;
+			}
+		>();
 
-			const visitedNodeLabels: string[] = visitedNodeD3IDs
-				.map((id) => findNodeByD3ID(id, nodes))
-				.filter((label): label is string => label !== undefined);
+		const pathsMap = new Map<number, string>();
 
-			// Get unvisited nodes by excluding visited node IDs
-			const unvisitedNodes: string[] = nodes
-				.filter((node) => !visitedNodeD3IDs.includes(node.d3id))
-				.map((node) => node.label || node.id)
-				.filter((label): label is string => label !== undefined);
+		// Process only up to `curIndex`
+		for (let stepIndex = 0; stepIndex <= curIndex; stepIndex++) {
+			const step = steps[stepIndex];
 
-			// Extract distances if they exist in the step data
-			const distances = step.distances ? Object.values(step.distances) : [];
+			// Process data only if `currentNode` is not null or undefined
+			if (step.currentNode !== null && step.currentNode !== undefined) {
+				// Get visited nodes by converting their IDs to labels
+				const visitedNodeD3IDs: number[] = step.visitedNodes.values().toArray();
 
-			// Add current step data to `rowMap` for maintaining row state
-			rowMap.set(step.currentNode, {
-				vv: visitedNodeLabels,
-				nv: unvisitedNodes,
-				distances,
-				localMin: calculateLocalMin(distances),
-			});
+				// Remove entries from `rowMap` if their key is not in `visitedNodeD3IDs`
+				rowMap.forEach((_, key) => {
+					if (!visitedNodeD3IDs.includes(key)) {
+						rowMap.delete(key);
+					}
+				});
+
+				const visitedNodeLabels: string[] = visitedNodeD3IDs
+					.map((id) => findNodeByD3ID(id, nodes))
+					.filter((label): label is string => label !== undefined)
+					.sort((a, b) => a.localeCompare(b));
+
+				// Get unvisited nodes by excluding visited node IDs
+				const unvisitedNodes: string[] = nodes
+					.filter((node) => !visitedNodeD3IDs.includes(node.d3id))
+					.map((node) => node.label || node.id)
+					.filter((label): label is string => label !== undefined)
+					.sort((a, b) => a.localeCompare(b));
+
+				// Update paths in pathsMap
+				nodes.forEach((node) => {
+					if (step.previous && step.previous[node.d3id] !== null) {
+						pathsMap.set(
+							node.d3id,
+							reconstructPath(node.d3id, step.previous, nodes)
+						);
+					}
+				});
+
+				// Extract distances and keep them numeric for calculations
+				const distances = nodes.map((node) => {
+					const distance = step.distances?.[node.d3id];
+					return distance !== undefined ? distance : ".";
+				});
+
+				// Extract paths separately
+				const paths = nodes.map((node) => {
+					return pathsMap.get(node.d3id) || "-";
+				});
+
+				// Add current step data to `rowMap`
+				rowMap.set(step.currentNode, {
+					vv: visitedNodeLabels,
+					nv: unvisitedNodes,
+					distances,
+					paths,
+					localMin: calculateLocalMin(
+						distances.filter((d) => typeof d === "number")
+					),
+				});
+			}
 		}
 
 		// Transform `rowMap` data into arrays for table rows
 		const tableRows: string[][][] = [];
-		rowMap.forEach((value: test, key: number) => {
+		rowMap.forEach((value, key) => {
+			// Format distances with paths
+			const distancesWithPaths = value.distances.map((distance, index) => {
+				if (distance === "." || distance === "Infinity") {
+					return String(distance); // No path for dots or Infinity
+				}
+				const path = value.paths[index];
+				return `${distance}<br>via<br>${path}`;
+			});
+
 			tableRows.push([
 				[
 					findNodeByD3ID(key, nodes) || String(key),
 					value.vv.join(" "),
 					value.nv.join(" "),
 				],
-				[...value.distances.map(String), String(value.localMin)], // Include localMin in distances
+				[...distancesWithPaths, String(value.localMin)], // Add formatted distances
 			]);
 		});
 
@@ -102,12 +172,17 @@
 			row[0][2], // Not Yet Visited (concatenated labels)
 		]);
 
-		// Scrollable columns (distances including localMin)
+		// Scrollable columns (distances including paths and localMin)
 		const rowsScrollable: Array<string[]> = tableRows.map((row) => row[1]);
 
-		// Return structured data for Svelte component
+		// Return structured data for the specific index
 		return { rowsStart, rowsScrollable };
 	};
 </script>
 
-<Base {algorithm} {headersStart} {calcRowData} bind:isTeacherMode />
+<Base
+	{algorithm}
+	{headersStart}
+	calcRowData={calcRowDataForIndex}
+	bind:isTeacherMode
+/>

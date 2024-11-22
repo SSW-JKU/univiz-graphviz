@@ -10,7 +10,7 @@
 	} from "./GraphBuilder";
 	import type { D3Edge, D3Node, EdgeLayout, GraphLayout } from "../types/Graph";
 	import { instance } from "@viz-js/viz";
-	import Properties from "../components/Properties.svelte";
+	import Properties from "./Properties.svelte";
 	import { writable } from "svelte/store";
 	import * as d3 from "d3";
 
@@ -288,8 +288,8 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: #2c3e50;
-		color: white;
+		background-color: var(--generalBackground);
+		color: var(--white);
 		cursor: pointer;
 		padding: 10px;
 		font-size: 1em;
@@ -302,28 +302,28 @@
 	}
 
 	button:hover {
-		background-color: #34495e;
+		background-color: var(--generalHover);
 	}
 
 	button:disabled {
-		background-color: #35404b;
+		background-color: var(--buttonDisabled);
 		color: #bdc3c7;
 		cursor: not-allowed;
 	}
 
 	button:disabled:hover {
-		background-color: #35404b;
+		background-color: var(--buttonDisabled);
 	}
 
 	.dot-src-display {
 		background-color: #ecf0f1;
-		color: #2c3e50;
+		color: var(--generalBackground);
 		padding: 10px;
 		border-radius: 5px;
 		overflow: auto;
 		font-family: monospace;
 		font-size: 0.9em;
-		border: 1px solid #2c3e50;
+		border: 1px solid var(--generalBackground);
 		margin-top: 10px;
 		max-height: 200px;
 		position: relative;
@@ -334,7 +334,7 @@
 		top: 8px;
 		right: 8px;
 		cursor: pointer;
-		color: #2c3e50;
+		color: var(--generalBackground);
 		background: transparent;
 		border: none;
 		padding: 5px;

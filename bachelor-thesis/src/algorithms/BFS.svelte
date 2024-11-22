@@ -1,28 +1,15 @@
 <script lang="ts">
 	import type { D3Node } from "../types/Graph";
-	import { bfs } from "./BFS";
+	import { calcRowData } from "./BFSandDFS";
 	import Base from "./Base.svelte";
 	import { AlgorithmMode, type AlgorithmStep } from "./types";
 
+	// Constants
 	const algorithm = AlgorithmMode.BFS;
-
 	const headersStart = ["Index"];
 
+	// Bindable variable
 	let isTeacherMode = false;
-
-	const calcRowData = (nodes: D3Node[], step: AlgorithmStep) => {
-		const visitedNodeD3IDs: number[] = step.visitedNodes.values().toArray();
-
-		const rowsStart: Array<string[]> = [["Vertex"], ["Visited"]];
-
-		const rowsScrollable: Array<string[]> = [
-			nodes.map((node) => node.label || node.id),
-			nodes.map((node) =>
-            visitedNodeD3IDs.includes(node.d3id) ? "T" : "F")
-		]; // No scrollable rows for BFS
-
-		return { rowsStart, rowsScrollable };
-	};
 </script>
 
 <Base {algorithm} {headersStart} {calcRowData} bind:isTeacherMode />
