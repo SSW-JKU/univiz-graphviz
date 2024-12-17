@@ -5,6 +5,7 @@
 	import About from "./pages/About.svelte";
 	import GraphsAndStuff from "./pages/GraphsAndStuff.svelte";
 	import Visualizer from "./components/Visualizer.svelte";
+	import Examples from "./components/Examples.svelte";
 	import BFS from "./algorithms/BFS.svelte";
 	import DFS from "./algorithms/DFS.svelte";
 	import Dijkstra from "./algorithms/Dijkstra.svelte";
@@ -80,6 +81,9 @@
 						<a href="/graphbuilding/visualizer" class="dropdown-link" use:link
 							>Graph Visualizer</a
 						>
+						<a href="/graphbuilding/examples" class="dropdown-link" use:link
+							>Graph Examples</a
+						>
 					</div>
 				</li>
 
@@ -127,6 +131,7 @@
 			directedGraph={true}
 		/>
 		<Route path="/graphbuilding/visualizer" component={Visualizer} />
+		<Route path="/graphbuilding/examples" component={Examples} />
 		<Route path="/algorithms/bfs" component={BFS} />
 		<Route path="/algorithms/dfs" component={DFS} />
 		<Route path="/algorithms/dijkstra" component={Dijkstra} />

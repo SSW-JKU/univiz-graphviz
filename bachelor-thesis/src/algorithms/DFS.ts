@@ -40,11 +40,15 @@ export const dfs = (
 	 * @param nodeId - The ID of the current node being explored.
 	 */
 	const dfsHelper = (nodeId: number) => {
+		// Record stepping into the node
+		const nodeLabel = findNodeByD3ID(nodeId, nodes) || nodeId;
+		addStep(visitedNodes, steps, nodeId, `Stepped into node ${nodeLabel}.`);
+
+		// Mark the node as visited
 		visitedNodes.add(nodeId);
 		visitedOrder.push(nodeId);
 
-		// Add a descriptive step
-		const nodeLabel = findNodeByD3ID(nodeId, nodes) || nodeId;
+		// Add a descriptive step for visiting
 		addStep(visitedNodes, steps, nodeId, `Visited node ${nodeLabel}.`);
 
 		// Explore unvisited neighbors
@@ -53,8 +57,12 @@ export const dfs = (
 				dfsHelper(neighborId);
 			}
 		});
+
+		// Record stepping out of the node
+		addStep(visitedNodes, steps, nodeId, `Stepped out of node ${nodeLabel}.`);
 	};
 
+	// Initial step
 	addStep(visitedNodes, steps, null, "Starting Depth-First Search.");
 	dfsHelper(startId);
 	addStep(visitedNodes, steps, null, "DFS complete.");

@@ -13,6 +13,7 @@
 	import { indentOnInput } from "@codemirror/language";
 	import { redraw } from "./GraphBuilder";
 	import { writable } from "svelte/store";
+	import { link } from "svelte-routing";
 
 	let svg: SVGElement;
 	let edgeLayout: EdgeLayout[];
@@ -25,7 +26,7 @@
 	let errorMessage: string = "";
 	let editor: EditorView;
 	let editorContainer: HTMLDivElement;
-	let selectedEdge = writable<D3Edge | null>(null)
+	let selectedEdge = writable<D3Edge | null>(null);
 
 	onMount(() => {
 		(async () => {
@@ -88,13 +89,34 @@
 	<div class="right">
 		<svg bind:this={svg}></svg>
 	</div>
+
+	<!-- Buttons at the bottom -->
+	<div class="button-container-column">
+		<a
+			href={/digraph/.test(dotSrc)
+				? `/graphbuilding/build-directed-graph?dotSrc=${encodeURIComponent(dotSrc)}`
+				: `/graphbuilding/build-undirected-graph?dotSrc=${encodeURIComponent(dotSrc)}`}
+			use:link>Edit graph</a
+		>
+		<a href={`/algorithms/bfs?dotSrc=${encodeURIComponent(dotSrc)}`} use:link
+			>BFS</a
+		>
+		<a href={`/algorithms/dfs?dotSrc=${encodeURIComponent(dotSrc)}`} use:link
+			>DFS</a
+		>
+		<a
+			href={`/algorithms/dijkstra?dotSrc=${encodeURIComponent(dotSrc)}`}
+			use:link>Dijkstra</a
+		>
+	</div>
 </div>
 
 <style>
 	.container {
 		display: flex;
-		height: 100vh;
+		height: calc(100vh - 60px); /* Subtract height of buttons */
 		width: 100%;
+		overflow: hidden;
 	}
 
 	.left {
@@ -139,5 +161,43 @@
 		object-fit: contain;
 		background-color: white;
 		border-radius: 5px;
+	}
+
+	/* Button container at the bottom */
+	.button-container-column {
+		position: fixed; /* Fix position at the bottom */
+		bottom: 0; /* Stick to the bottom */
+		left: 0;
+		width: 100%; /* Full width */
+		background-color: #f0f0f0; /* Match background */
+		box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1); /* Shadow at the top */
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 10px;
+		padding: 10px;
+	}
+
+	.button-container-column a {
+		text-decoration: none; /* Remove underlines */
+		display: block;
+		width: 80%; /* Add width to buttons */
+		padding: 10px;
+		font-size: 1em;
+		border: none;
+		border-radius: 5px;
+		background-color: #3498db;
+		color: white;
+		text-align: center;
+		cursor: pointer;
+		transition: background-color 0.3s;
+	}
+
+	.button-container-column a:hover {
+		background-color: #2980b9;
+	}
+
+	.button-container-column a:active {
+		background-color: #1d6ca1; /* Slightly darker when active */
 	}
 </style>

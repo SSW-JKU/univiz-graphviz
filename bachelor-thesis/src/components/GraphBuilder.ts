@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import * as transition from "d3-transition";
 import { get, type Writable } from "svelte/store";
-import type { D3Edge, D3Node, EdgeLayout, GraphLayout } from "../types/Graph";
+import type { D3Edge, D3Node, EdgeLayout, GraphLayout, LabelDrawOp } from "../types/Graph";
 
 /**
  * Creates a new node with an optional label and position.
@@ -251,106 +251,30 @@ const redrawLines = (
 
 	// Edge weights with refined position based on `pos` data
 	g.selectAll<SVGTextElement, D3Edge>("text.edge-weight")
-		.data(edges, (d: D3Edge) => d.from.d3id + "_" + d.to.d3id)
+		.data(
+			edges.filter(
+				(
+					d: D3Edge
+				): d is D3Edge & { textPos: [number, number]; weight: number } =>
+					d.weight !== null && d.textPos !== null // Narrow the type
+			),
+			(d: D3Edge) => d.from.d3id + "_" + d.to.d3id
+		)
 		.join("text")
 		.attr("class", "edge-weight")
 		.attr("x", (d) => {
-			const pathElement = d3
-				.select(`[data-edge="${d.from.d3id}->${d.to.d3id}"]`)
-				.node() as SVGPathElement;
-			if (pathElement && typeof pathElement.getTotalLength === "function") {
-				const length = pathElement.getTotalLength();
-				const midpoint = pathElement.getPointAtLength(length / 2);
-
-				// Calculate tangent direction and perpendicular offset
-				const pointBefore = pathElement.getPointAtLength(length / 2 - 1);
-				const pointAfter = pathElement.getPointAtLength(length / 2 + 1);
-				const dx = pointAfter.x - pointBefore.x;
-				const dy = pointAfter.y - pointBefore.y;
-				const tangentLength = Math.sqrt(dx * dx + dy * dy);
-
-				// Perpendicular offset calculation
-				const offsetX = (-dy / tangentLength) * 10;
-
-				// Resolve collisions and flip if needed
-				const adjusted = adjustForCollision(
-					midpoint.x + offsetX,
-					midpoint.y,
-					nodes,
-					10,
-					dx,
-					dy
-				);
-
-				return adjusted.x;
-			}
-			return 0;
+			return d.textPos[0]; // TypeScript now knows textPos is not null
 		})
 		.attr("y", (d) => {
-			const pathElement = d3
-				.select(`[data-edge="${d.from.d3id}->${d.to.d3id}"]`)
-				.node() as SVGPathElement;
-			if (pathElement && typeof pathElement.getTotalLength === "function") {
-				const length = pathElement.getTotalLength();
-				const midpoint = pathElement.getPointAtLength(length / 2);
-
-				// Calculate tangent direction and perpendicular offset
-				const pointBefore = pathElement.getPointAtLength(length / 2 - 1);
-				const pointAfter = pathElement.getPointAtLength(length / 2 + 1);
-				const dx = pointAfter.x - pointBefore.x;
-				const dy = pointAfter.y - pointBefore.y;
-				const tangentLength = Math.sqrt(dx * dx + dy * dy);
-
-				// Perpendicular offset calculation
-				const offsetY = (dx / tangentLength) * 10;
-
-				// Resolve collisions and flip if needed
-				const adjusted = adjustForCollision(
-					midpoint.x,
-					midpoint.y + offsetY,
-					nodes,
-					10,
-					dx,
-					dy
-				);
-
-				return adjusted.y;
-			}
-			return 0;
+			const svgHeight = svg.getBoundingClientRect().height;
+			return svgHeight - d.textPos[1];
 		})
-		.text((d) => (d.weight !== null && d.weight !== -1 ? d.weight : ""))
+		.text((d) => ` ${d.weight}`) // No need to check for null
 		.style("font-size", "12px")
 		.style("fill", "black")
 		.attr("text-anchor", "middle");
 
 	centerGroupInSvg(svg, g);
-};
-
-const adjustForCollision = (
-	x: number,
-	y: number,
-	nodes: D3Node[],
-	padding: number,
-	dx: number,
-	dy: number
-) => {
-	let adjustedX = x;
-	let adjustedY = y;
-
-	nodes.forEach((node) => {
-		const nodeRadius = Math.max(node.width / 2, node.height / 2) + padding;
-		const distanceX = adjustedX - node.posX;
-		const distanceY = adjustedY - node.posY;
-		const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
-
-		if (distance < nodeRadius) {
-			// Flip the label to the opposite side of the edge
-			adjustedX = x - dx * 20; // Flip along the X-axis
-			adjustedY = y - dy * 20; // Flip along the Y-axis
-		}
-	});
-
-	return { x: adjustedX, y: adjustedY };
 };
 
 const centerGroupInSvg = (
@@ -429,7 +353,7 @@ export const getDotSrc = (
 		labelString += " -> ";
 		labelString += `${edge.to.id}`;
 		if (edge.weight && edge.weight > 0) {
-			labelString += ` [weight=${edge.weight}]`;
+			labelString += ` [label=${edge.weight}]`;
 		}
 		return labelString;
 	});
@@ -477,8 +401,8 @@ export const getEdgePosBetweenNodes = (
 	id2: number,
 	edges: EdgeLayout[],
 	directedGraph: boolean
-): string => {
-	let edge;
+): {pos: string, textPos: [number, number] | null, weight: number | null} => {
+	let edge: EdgeLayout | undefined;
 	if (directedGraph) {
 		edge = edges.find((edge) => edge.tail === id1 && edge.head === id2);
 	} else {
@@ -486,7 +410,24 @@ export const getEdgePosBetweenNodes = (
 			edges.find((edge) => edge.tail === id1 && edge.head === id2) ||
 			edges.find((edge) => edge.tail === id2 && edge.head === id1);
 	}
-	return edge?.pos || "";
+
+	let textPos = null;
+	let weight: number | null = null;
+	try {
+		const edgeText = edge?._ldraw_.find(
+			(text: LabelDrawOp) => text.op === "T"
+		);
+		textPos = edgeText?.pt || null;
+		weight = parseInt(edgeText?.text || "");
+	} catch {
+		console.log("No ldraw TODO");
+	}
+	const edgeData = {
+		pos: edge?.pos || "",
+		textPos,
+		weight,
+	}
+	return edgeData;
 };
 
 /**

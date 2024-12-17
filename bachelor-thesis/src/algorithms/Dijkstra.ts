@@ -66,13 +66,12 @@ export const dijkstra = (
 	);
 
 	while (unvisited.size > 0) {
-		const currentId = Array.from(unvisited)
-			.sort((a, b) => {
-				if (distances[a] !== distances[b]) {
-					return distances[a] - distances[b];
-				}
-				return String(findNodeLabel(a)).localeCompare(String(findNodeLabel(b)));
-			})[0];
+		const currentId = Array.from(unvisited).sort((a, b) => {
+			if (distances[a] !== distances[b]) {
+				return distances[a] - distances[b];
+			}
+			return String(findNodeLabel(a)).localeCompare(String(findNodeLabel(b)));
+		})[0];
 
 		if (distances[currentId] === Infinity) break;
 
@@ -90,7 +89,9 @@ export const dijkstra = (
 		addStep(
 			currentId,
 			null,
-			`Visiting node ${findNodeLabel(currentId)} with shortest distance ${distances[currentId]}.`
+			`Visiting node ${findNodeLabel(currentId)} with shortest distance ${
+				distances[currentId]
+			}.`
 		);
 
 		// Process neighbors
@@ -106,6 +107,13 @@ export const dijkstra = (
 			const currentEdge: [number, number] = [currentId, node];
 			seenButNotVisited.add(node);
 
+			// Build description for this edge
+			let description = `Checking Edge ${findNodeLabel(
+				currentId
+			)} -> ${findNodeLabel(node)}. `;
+			description += `Current shortest distance: ${distances[node]}. `;
+			description += `New possible distance: ${alt}. `;
+
 			if (alt < distances[node]) {
 				distances[node] = alt;
 				previous[node] = currentId;
@@ -120,21 +128,12 @@ export const dijkstra = (
 					shortestPathsToNodes.push(currentEdge);
 				}
 
-				addStep(
-					currentId,
-					currentEdge,
-					`Updated shortest path to node ${findNodeLabel(node)} through ${findNodeLabel(
-						currentId
-					)}. Distance is now ${alt}.`
-				);
+				description += `Update shortest distance to ${alt}.`;
+
+				addStep(currentId, currentEdge, description);
 			} else {
-				addStep(
-					currentId,
-					currentEdge,
-					`Checked edge ${findNodeLabel(currentId)} -> ${findNodeLabel(
-						node
-					)}. No shorter path found.`
-				);
+				description += `No change to shortest distance.`;
+				addStep(currentId, currentEdge, description);
 			}
 		});
 
@@ -154,8 +153,6 @@ export const dijkstra = (
 
 	return { distances, previous, steps };
 };
-
-
 
 /**
  * Helper function to get neighbors of a node along with their edge weights.

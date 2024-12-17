@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from "svelte";
 	import type { D3Node } from "../types/Graph";
 	import { calcRowData } from "./BFSandDFS";
 	import Base from "./Base.svelte";
@@ -10,6 +11,13 @@
 
 	// Bindable variable
 	let isTeacherMode = false;
+
+	let dotSrc = "";
+
+	onMount(() => {
+		const params = new URLSearchParams(window.location.search);
+		dotSrc = params.get("dotSrc") || "";
+	});
 </script>
 
-<Base {algorithm} {headersStart} {calcRowData} bind:isTeacherMode />
+<Base {algorithm} {headersStart} {calcRowData} {dotSrc} bind:isTeacherMode />

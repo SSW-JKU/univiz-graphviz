@@ -31,7 +31,7 @@
 	let selectedEdge = writable<D3Edge | null>(null);
 	let viz: Viz;
 
-	let dotSrc: string = "";
+	export let dotSrc: string = "";
 	let nodes: D3Node[] = [];
 	let edges: D3Edge[] = [];
 	let directedGraph: boolean = false;
@@ -74,10 +74,8 @@
 		if (algorithm === AlgorithmMode.DIJKSTRA) {
 			headersScrollable = nodes.map((node) => `d(${node.label || node.id})`);
 			headersScrollable.push("Local Min");
-			console.log(algorithm);
 		} else {
 			headersScrollable = nodes.map((node) => String(node.d3id));
-			console.log(algorithm);
 		}
 	};
 
@@ -102,6 +100,9 @@
 				}),
 				parent: editorContainer,
 			});
+			if (dotSrc) {
+				updateGraph();
+			}
 		})();
 	});
 
@@ -340,6 +341,16 @@
 		currentStepIndex = sliderValue;
 		highlightStep(steps[currentStepIndex]);
 	};
+
+	function handleScroll(event: WheelEvent) {
+		// Adjust the slider value based on the scroll delta
+		let stepChange = event.deltaY > 0 ? 1 : -1; // Scroll down increases, scroll up decreases
+		currentStepIndex = Math.min(
+			steps.length - 1,
+			Math.max(0, currentStepIndex + stepChange)
+		);
+		highlightStep(steps[currentStepIndex]);
+	}
 </script>
 
 <div class="container">
@@ -407,6 +418,7 @@
 					>Previous</button
 				>
 				<input
+					on:wheel={handleScroll}
 					type="range"
 					min="0"
 					max={steps.length - 1}

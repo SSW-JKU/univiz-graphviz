@@ -5,27 +5,14 @@
 
 	export let nodeLabel: string | null = null;
 	export let nodeID: string | null = null;
-	export let tempNodeLabel: string;
 	export let labelUpdate: (newLabel: string) => void;
 	export let selectedEdge: Writable<D3Edge | null>;
 
-	// Reactive statement to update node label
-	$: if (tempNodeLabel) {
-		labelUpdate(tempNodeLabel);
-	}
-
-	beforeUpdate(() => {
-		if (
-			nodeLabel &&
-			(tempNodeLabel === undefined || tempNodeLabel !== nodeLabel)
-		) {
-			tempNodeLabel = nodeLabel;
+	$: {
+		if (nodeLabel !== null) {
+			labelUpdate(nodeLabel);
 		}
-	});
-
-	selectedEdge.subscribe((selEdge) => {
-		console.log(selEdge);
-	});
+	}
 </script>
 
 <div class="menu">
@@ -48,7 +35,12 @@
 			<!-- Label -->
 			<div class="label-container">
 				<label class="prop-label" for="node-label">Label:</label>
-				<input id="node-label" bind:value={tempNodeLabel} maxlength="15" />
+				<input
+					id="node-label"
+					bind:value={nodeLabel}
+					placeholder={nodeID}
+					maxlength="15"
+				/>
 			</div>
 		</div>
 	{/if}

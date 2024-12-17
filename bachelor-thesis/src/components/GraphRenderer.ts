@@ -1,5 +1,11 @@
 import * as dot from "graphlib-dot";
-import type { D3Edge, D3Node, GraphLayout, NodeObject } from "../types/Graph";
+import type {
+	D3Edge,
+	D3Node,
+	GraphLayout,
+	LabelDrawOp,
+	NodeObject,
+} from "../types/Graph";
 import { createNode } from "./GraphBuilder";
 import { instance, type Viz } from "@viz-js/viz";
 
@@ -7,7 +13,8 @@ export const convertDotSrc = (
 	dotSrc: string,
 	viz: Viz
 ): [D3Node[], D3Edge[]] => {
-	const jsonOutput = viz.renderJSON(dotSrc) as GraphLayout;
+	const labelSpace = dotSrc.replace(/label=(\w+)/g, 'label=" $1"');
+	const jsonOutput = viz.renderJSON(labelSpace) as GraphLayout;
 	const nodes: D3Node[] = jsonOutput.objects.map(
 		(node: NodeObject, index: number) => {
 			const posString = node.pos.split(",");
@@ -15,7 +22,7 @@ export const convertDotSrc = (
 			return {
 				id: node.name,
 				d3id: index,
-				label: node.label,
+				label: node.label !== "\\N" ? node.label : null,
 				posX,
 				posY,
 				width: parseFloat(node.width) * 72,
@@ -40,16 +47,28 @@ export const convertDotSrc = (
 					`Edge refers to non-existent nodes: ${edge.tail} -> ${edge.head}`
 				);
 			}
+			let textPos = null;
+			let weight: number | null = null;
+
+			try {
+				const edgeText = edge._ldraw_.find(
+					(text: LabelDrawOp) => text.op === "T"
+				);
+				textPos = edgeText.pt;
+				weight = parseInt(edgeText.text);
+			} catch {
+				console.log("No ldraw TODO");
+			}
 
 			return {
 				from: fromNode, // Assign the actual D3Node object for `from`
 				to: toNode, // Assign the actual D3Node object for `to`
 				pos: edge.pos,
-				weight: edge.weight ?? 1, // Default to weight 1 if undefined
+				weight: weight || null,
+				textPos,
 			};
 		});
 	}
 
 	return [nodes, edges];
 };
-

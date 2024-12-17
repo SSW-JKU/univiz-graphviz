@@ -17,6 +17,8 @@ thick edge: fill none for visibla and invisible path
 invisible path for better click handling for edge
 more points in edge/path so that curves are smoother
 
+Lessons learnedL: Lessons learned, Reading doc clearly, e.g. weight wrong, using labels
+
 
 In the course "Algorithmen und Datenstrukturen 2" (Algorithms and Data Structures 2) at the Johannes Kepler University,
 students learn about graphs and graph flow algorithms. Currently, the teaching materials for these topics are limited to
@@ -160,4 +162,27 @@ blue edge - shortest edge
 dfs:
 no more neighbours, step one out
 
+!  Checking Edge A -> B. Current shortest distance: X. (No change to shortest distance or Update shortest distance to Y)
+
+!  Graphrendering edge weights -> change to label=" TestTest"
+
+Both graphbuilders -> Open as BFS, DFS, Dijkstra
+Graphvisualizer -> Open as BFS, DFS, Dijkstra
+Questind kind in trace (algorithmStep) for student mode (Dijkstra Node and Edge, DFS next step)
+
 \end{document}
+
+
+
+- Struktur thesis
+- Highlighting in table
+- Question trace
+
+introduction
+background
+goal
+intermediate / trial and error
+final system
+related work ... (guideline)
+
+100% width for screenshots in latex (includegraphics)

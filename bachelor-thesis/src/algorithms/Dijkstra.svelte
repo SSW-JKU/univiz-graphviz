@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from "svelte";
 	import type { D3Node } from "../types/Graph";
 	import { findNodeByD3ID } from "./base";
 	import Base from "./Base.svelte";
@@ -178,11 +179,19 @@
 		// Return structured data for the specific index
 		return { rowsStart, rowsScrollable };
 	};
+
+	let dotSrc = "";
+
+	onMount(() => {
+		const params = new URLSearchParams(window.location.search);
+		dotSrc = params.get("dotSrc") || "";
+	});
 </script>
 
 <Base
 	{algorithm}
 	{headersStart}
 	calcRowData={calcRowDataForIndex}
+	{dotSrc}
 	bind:isTeacherMode
 />

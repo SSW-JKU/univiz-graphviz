@@ -13,6 +13,8 @@
 	import Properties from "./Properties.svelte";
 	import { writable } from "svelte/store";
 	import * as d3 from "d3";
+	import { link } from "svelte-routing";
+	import { convertDotSrc } from "./GraphRenderer";
 
 	export let directedGraph: boolean;
 	let nodeCount = 0;
@@ -23,14 +25,13 @@
 	let selectedEdge = writable<D3Edge | null>(null);
 	let edges: D3Edge[] = [];
 	let edgeLayout: EdgeLayout[];
-	let tempNodeLabel: string;
 	const editable = true;
 	let dotSrc: string = "";
 
-
 	const updateGraph = async () => {
-		const dotSrcTemp = getDotSrc(nodes, edges, directedGraph);
-		if (nodes.length === 0) {
+		let dotSrcTemp = getDotSrc(nodes, edges, directedGraph);
+		const viz = await instance();
+		if (nodes.length === 0 && !dotSrc) {
 			return;
 		}
 		if (directedGraph) {
@@ -38,9 +39,9 @@
 		} else {
 			dotSrc = dotSrcTemp.replaceAll("->", "--").replaceAll("digraph", "graph");
 		}
-
-		const viz = await instance();
-		const layout = (await viz.renderJSON(dotSrcTemp)) as GraphLayout;
+		const labelSpace = dotSrcTemp.replace(/label=(\w+)/g, 'label=" $1"');
+		//console.log(labelSpace)
+		const layout = (await viz.renderJSON(labelSpace)) as GraphLayout;
 		edgeLayout = layout.edges;
 
 		// Update node positions based on the layout
@@ -48,13 +49,17 @@
 
 		// Update edge positions based on the layout
 		edges.forEach((edge) => {
-			edge.pos = getEdgePosBetweenNodes(
+			const edgeData = getEdgePosBetweenNodes(
 				edge.from.d3id,
 				edge.to.d3id,
 				edgeLayout,
 				directedGraph
 			);
+			edge.pos = edgeData.pos;
+			edge.textPos = edgeData.textPos;
+			edge.weight = edgeData.weight;
 		});
+
 		redraw(
 			svg,
 			nodes,
@@ -66,18 +71,17 @@
 		);
 	};
 
+	onMount(async () => {
+		const params = new URLSearchParams(window.location.search);
+		dotSrc = params.get("dotSrc") || "";
+		if (dotSrc) {
+			const viz = await instance();
+			[nodes, edges] = convertDotSrc(dotSrc, viz);
+			nodeCount = nodes.length;
+		}
 
-	onMount(() => {
-		if (svg) {
-			redraw(
-				svg,
-				nodes,
-				edges,
-				selectedNodes,
-				selectedEdge,
-				directedGraph,
-				editable
-			);
+		if (svg && dotSrc) {
+			updateGraph();
 		}
 	});
 
@@ -87,7 +91,8 @@
 	const updateNodeLabel = (newLabel: string) => {
 		selectedNodes.update((selNodes) => {
 			if (selNodes.length === 1) {
-				selNodes[0].label = tempNodeLabel;
+				console.log(newLabel)
+				selNodes[0].label = newLabel;
 			}
 			return selNodes;
 		});
@@ -95,12 +100,6 @@
 		// Redraw the graph after label change
 		updateGraph();
 	};
-
-	selectedNodes.subscribe((selNodes) => {
-		if (selNodes.length === 0) {
-			tempNodeLabel = "";
-		}
-	});
 
 	selectedEdge.subscribe((selEdge) => {
 		if (svg) {
@@ -123,7 +122,6 @@
 		<div class="sidebar">
 			<div class="property-menu">
 				<Properties
-					bind:tempNodeLabel
 					nodeLabel={$selectedNodes.length === 1
 						? $selectedNodes[0].label
 						: null}
@@ -151,6 +149,26 @@
 				{:else}
 					<pre>{"Currently no dot source has been generated!"}</pre>
 				{/if}
+			</div>
+			<div class="algorithm-buttons">
+				<a
+					href={`/algorithms/bfs?dotSrc=${encodeURIComponent(dotSrc)}`}
+					use:link
+				>
+					<button>BFS</button>
+				</a>
+				<a
+					href={`/algorithms/dfs?dotSrc=${encodeURIComponent(dotSrc)}`}
+					use:link
+				>
+					<button>DFS</button>
+				</a>
+				<a
+					href={`/algorithms/dijkstra?dotSrc=${encodeURIComponent(dotSrc)}`}
+					use:link
+				>
+					<button>Dijkstra</button>
+				</a>
 			</div>
 		</div>
 	</div>
@@ -325,7 +343,8 @@
 		font-size: 0.9em;
 		border: 1px solid var(--generalBackground);
 		margin-top: 10px;
-		max-height: 200px;
+		margin-bottom: 10px;
+		max-height: 400px;
 		position: relative;
 	}
 
@@ -343,6 +362,51 @@
 
 	.copy-icon:hover {
 		color: #1abc9c;
+	}
+
+	.algorithm-buttons {
+		display: flex;
+		gap: 10px;
+		margin-top: 10px;
+		justify-content: center;
+	}
+
+	.algorithm-buttons button {
+		flex: 1;
+		padding: 10px;
+		font-size: 0.75em;
+		border: none;
+		border-radius: 5px;
+		background-color: #3498db;
+		color: white;
+		cursor: pointer;
+		transition: background-color 0.3s;
+	}
+
+	.algorithm-buttons button:hover {
+		background-color: #2980b9;
+	}
+
+	a {
+		text-decoration: none; /* Remove underlining */
+		display: block; /* Ensure the entire area is clickable */
+		padding: 10px;
+		font-size: 1em;
+		border: none;
+		border-radius: 5px;
+		background-color: #3498db;
+		color: white;
+		text-align: center;
+		cursor: pointer;
+		transition: background-color 0.3s;
+	}
+
+	a:hover {
+		background-color: #2980b9;
+	}
+
+	a:active {
+		background-color: #1d6ca1; /* Slightly darker when active */
 	}
 
 	@media (max-width: 300px) {
