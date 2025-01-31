@@ -1,3 +1,17 @@
 \section{Introduction}
 \label{sec:introduction}
-\lipsum[1-2]
+Graphs are a fundamental concept in computer science, with applications spanning a wide range of fields, including network analysis, optimization, and algorithm design. Effective teaching and learning of graph theory and graph-based algorithms often require the use of tools that allow users to interactively create, visualize, and explore graphs. However, many traditional approaches rely on static representations, such as slides or diagrams, which limit the potential for hands-on engagement and dynamic exploration of these concepts.
+
+A key challenge lies in providing students and educators with tools that are both accessible and versatile. While some graph visualization tools exist, they often lack the flexibility required for a comprehensive educational experience, particularly when it comes to seamlessly integrating graph creation, exploration, and algorithm visualization. This limitation creates an opportunity for a unified, user-friendly application tailored specifically for educational purposes.
+
+This thesis contributes to addressing this challenge by presenting the development of a web-based application that supports interactive graph creation and algorithm visualization. The contributions of this work include:
+\begin{enumerate}
+    \item A \textbf{graph builder} for creating and modifying both directed and undirected graphs.
+    \item A \textbf{visualizer} for displaying and exploring graphs and their properties.
+    \item Algorithm visualizations for \textbf{Dijkstra’s shortest path}, \textbf{breadth-first search (BFS)}, and \textbf{depth-first search (DFS)} on existing graphs.
+    \item Predefined example graphs, which can be opened in the builder, visualizer, or directly in the algorithm simulation mode for hands-on experimentation.
+\end{enumerate}
+
+During the development process, initial work began with Graphviz, but limitations in flexibility and interactivity led to a switch to \textbf{D3.js}, a more powerful library for creating interactive visualizations. The project progressed iteratively, starting with a prototype graph builder in D3.js to familiarize with the library, followed by stepwise development of the graph visualizer and algorithm simulations. Finally, predefined examples were incorporated to demonstrate the tool’s capabilities and provide immediate utility for educational purposes.
+
+In summary, this chapter outlines the task and approach taken to address it. The task at hand involved creating an interactive educational tool that belongs to the fields of graph theory and algorithm visualization. By the conclusion of this work, the requirements of the task were not only fulfilled but also extended through the development of a flexible and versatile application that enhances both teaching and learning experiences in this domain.

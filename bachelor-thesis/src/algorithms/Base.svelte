@@ -14,8 +14,8 @@
 	import { dot } from "@viz-js/lang-dot";
 	import { indentOnInput } from "@codemirror/language";
 	import { redraw } from "../components/GraphBuilder";
-	import { bfs } from "../algorithms/BFS";
-	import { dfs } from "../algorithms/DFS";
+	import { bfs, bfsFinal, bfsNew, bfsNewNew, testRecursiveBFS } from "../algorithms/BFS";
+	import { dfsNew as dfs } from "../algorithms/DFS";
 	import {
 		AlgorithmMode,
 		type AlgorithmStep,
@@ -49,6 +49,7 @@
 
 	// Flags for mode states
 	export let isTeacherMode = false;
+	export let isQuestionMode = false;
 
 	// Collapsible panel state
 	let showEditor = true;
@@ -63,7 +64,8 @@
 	export let calcRowData: (
 		nodes: D3Node[],
 		step: AlgorithmStep[],
-		curIndex: number
+		curIndex: number,
+		edges?: D3Edge[],
 	) => {
 		rowsStart: string[][];
 		rowsScrollable: string[][];
@@ -75,7 +77,7 @@
 			headersScrollable = nodes.map((node) => `d(${node.label || node.id})`);
 			headersScrollable.push("Local Min");
 		} else {
-			headersScrollable = nodes.map((node) => String(node.d3id));
+			headersScrollable = ["Neighbors", "Visited", "Queue", "Next"];
 		}
 	};
 
@@ -95,7 +97,7 @@
 								updateGraph();
 							}
 						}),
-						EditorView.editable.of(!isTeacherMode),
+						EditorView.editable.of(!isTeacherMode && !isQuestionMode),
 					],
 				}),
 				parent: editorContainer,
@@ -153,14 +155,14 @@
 					}
 				}),
 				EditorView.editable.of(!writable),
-				isTeacherMode ? readOnlyTheme : [],
+				isTeacherMode || isQuestionMode ? readOnlyTheme : [],
 			],
 		});
 		// Apply the new state to the editor
 		editor.setState(newState);
 	};
 
-	const runAlgorithm = () => {
+	const runAlgorithm = (mode: "teacher" | "question") => {
 		const selected = get(selectedNodes);
 		if (selected.length === 1) {
 			const startNode = selected[0];
@@ -169,12 +171,19 @@
 			if (algorithm === AlgorithmMode.DIJKSTRA) {
 				steps = dijkstra(nodes, edges, startNode.d3id).steps;
 			} else if (algorithm === AlgorithmMode.BFS) {
-				steps = bfs(nodes, edges, startNode.d3id).steps;
+				//steps = bfs(nodes, edges, startNode.d3id).steps;
+				// steps = bfsNew(nodes, edges, startNode.d3id).steps;
+				//steps = bfsNewNew(nodes, edges, startNode.d3id).steps
+				steps = bfsFinal(nodes, edges, startNode.d3id).steps
 			} else if (algorithm === AlgorithmMode.DFS) {
 				steps = dfs(nodes, edges, startNode.d3id).steps;
 			}
 			currentStepIndex = 0;
-			isTeacherMode = true;
+			if (mode === "teacher") {
+				isTeacherMode = true;
+			} else if (mode === "question") {
+				isQuestionMode = true;
+			}
 			updateEditorState(isTeacherMode);
 			resetGraph();
 			d3.selectAll("[data-node]").style("cursor", "auto").on("click", null);
@@ -281,7 +290,11 @@
 			}
 		}
 
-		tableRows = calcRowData(nodes, steps, currentStepIndex);
+		if (algorithm === AlgorithmMode.DIJKSTRA) {
+			tableRows = calcRowData(nodes, steps, currentStepIndex);
+		} else {
+			tableRows = calcRowData(nodes, steps, currentStepIndex, edges);
+		}
 	};
 
 	const nextStep = () => {
@@ -401,18 +414,27 @@
 
 		<!-- Algorithm Controls -->
 		<div class="controls">
-			<button
-				on:click={runAlgorithm}
-				disabled={$selectedNodes.length !== 1 || isTeacherMode}
-			>
-				{#if $selectedNodes.length !== 1 && !isTeacherMode}
-					Please select a node to start the algorithm
-				{:else if isTeacherMode}
-					Algorithm is currently running
-				{:else}
-					Run Algorithm
-				{/if}
-			</button>
+			{#if $selectedNodes.length === 1}
+				<button
+					on:click={() => runAlgorithm("teacher")}
+					disabled={$selectedNodes.length !== 1 || isTeacherMode}
+				>
+					Run Algorithm in Teacher-Mode
+				</button>
+				<button
+					on:click={() => runAlgorithm("question")}
+					disabled={$selectedNodes.length !== 1 || isTeacherMode}
+				>
+					Run Algorithm in Question-Mode
+				</button>
+			{:else if $selectedNodes.length !== 1 && !isTeacherMode && !isQuestionMode}
+				Please select a node to start the algorithm
+			{:else if isTeacherMode}
+				Algorithm is currently running in teacher-mode
+			{:else if isQuestionMode}
+				Algorithm is currently running in question-mode
+			{/if}
+
 			{#if isTeacherMode}
 				<button on:click={previousStep} disabled={currentStepIndex === 0}
 					>Previous</button

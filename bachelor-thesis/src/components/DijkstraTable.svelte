@@ -6,6 +6,39 @@
 	export let rowsStart: Array<string[]> = [];
 	export let rowsScrollable: Array<string[]> = [];
 	export let algorithmMode: AlgorithmMode;
+
+	// Buffers to store the previous states
+	let previousRowsStart: Array<string[]> = [];
+	let previousRowsScrollable: Array<string[]> = [];
+
+	// Arrays to track changes (same dimensions as rowsStart and rowsScrollable)
+	let changesRowsStart: Array<boolean[]> = [];
+	let changesRowsScrollable: Array<boolean[]> = [];
+
+	// Update tracking for rowsStart
+	$: {
+		if (rowsStart) {
+			changesRowsStart = rowsStart.map((row, rowIndex) =>
+				row.map(
+					(cell, cellIndex) => previousRowsStart[rowIndex]?.[cellIndex] !== cell
+				)
+			);
+			previousRowsStart = JSON.parse(JSON.stringify(rowsStart));
+		}
+	}
+
+	// Update tracking for rowsScrollable
+	$: {
+		if (rowsScrollable) {
+			changesRowsScrollable = rowsScrollable.map((row, rowIndex) =>
+				row.map(
+					(cell, cellIndex) =>
+						previousRowsScrollable[rowIndex]?.[cellIndex] !== cell
+				)
+			);
+			previousRowsScrollable = JSON.parse(JSON.stringify(rowsScrollable));
+		}
+	}
 </script>
 
 <div class="table-scroll">
@@ -34,17 +67,27 @@
 				<tr>
 					<!-- Sticky Columns -->
 					{#each row as cell, cellIndex}
-						<td class="sticky-{cellIndex + 1}">{cell}</td>
+						<td
+							class={`sticky-${cellIndex + 1} ${
+								changesRowsStart[rowIndex]?.[cellIndex] ? "highlight" : ""
+							}`}
+						>
+							{cell}
+						</td>
 					{/each}
 
 					<!-- Scrollable Columns -->
 					{#each rowsScrollable[rowIndex] as scrollableCell, index}
 						<td
-							class={index === rowsScrollable[rowIndex].length - 1 &&
-							algorithmMode === AlgorithmMode.DIJKSTRA
-								? "sticky-right"
-								: ""}>{@html scrollableCell}</td
+							class={`${
+								index === rowsScrollable[rowIndex].length - 1 &&
+								algorithmMode === AlgorithmMode.DIJKSTRA
+									? "sticky-right"
+									: ""
+							} ${changesRowsScrollable[rowIndex]?.[index] ? "highlight" : ""}`}
 						>
+							{@html scrollableCell}
+						</td>
 					{/each}
 				</tr>
 			{/each}
@@ -58,6 +101,11 @@
 
 	* {
 		box-sizing: border-box;
+	}
+
+	td.highlight {
+		background-color: lightgreen !important; /* Ensures it overrides the default */
+		transition: background-color 0.5s ease-out; /* Smooth fade-out for the highlight */
 	}
 
 	.table-scroll {

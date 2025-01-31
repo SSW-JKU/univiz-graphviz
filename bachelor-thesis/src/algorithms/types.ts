@@ -1,6 +1,6 @@
 export interface AlgorithmStep {
 	currentNode: number | null;
-	currentEdge: [number, number] | null;
+	currentEdges: [number, number] | null;
 	visitedNodes: Set<number>;
 	visitedEdges: Array<[number, number]>;
 	description: string;
@@ -9,6 +9,8 @@ export interface AlgorithmStep {
 	previous?: Record<number, number | null>;
 	shortestPathsToNodes?: Array<[number, number]>; // Optional, tracks shortest edges for seen nodes
 	seenButNotVisitedNodes?: Array<number>; // Optional, tracks nodes seen but not visited
+	queue?: number[];
+	neighbors?: Array<number>;
 }
 
 export type TableRows = {

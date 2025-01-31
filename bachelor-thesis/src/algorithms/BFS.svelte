@@ -7,7 +7,7 @@
 
 	// Constants
 	const algorithm = AlgorithmMode.BFS;
-	const headersStart = ["Index"];
+	const headersStart = ["Current Node"];
 
 	// Bindable variable
 	let isTeacherMode = false;

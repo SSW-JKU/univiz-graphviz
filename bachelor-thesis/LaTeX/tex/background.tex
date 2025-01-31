@@ -1,15 +1,33 @@
 \section{Background}
 \label{sec:background}
-\lipsum[1-1]
 
-\subsection{Memory Cities}
-\label{sec:memory_cities}
+In this section, the theoretical and technical foundations relevant to this work are presented, providing the reader with the necessary background knowledge to better understand the development and functionality of the web-based graph application. This includes an overview of graph theory, algorithm visualization, and the technologies used for implementation.
 
-Weninger et al.~\cite{Weninger:2020-MemoryCities} made cool cities.
-They don't look like \autoref{fig:example} but way cooler.
+\subsection{Graph Theory and Algorithms}
+Graphs are abstract data structures used to model pairwise relationships between objects, with applications in numerous domains such as network analysis, route optimization, and scheduling. A graph consists of vertices (or nodes) connected by edges, which can be either directed or undirected. Key algorithms commonly applied to graphs include:
+\begin{itemize}
+    \item \textbf{Breadth-First Search (BFS):} An algorithm for traversing or searching graph data structures level by level.
+    \item \textbf{Depth-First Search (DFS):} An algorithm for traversing graphs by exploring as far as possible along a branch before backtracking.
+    \item \textbf{Dijkstra's Algorithm:} An algorithm for finding the shortest paths between nodes in a weighted graph.
+\end{itemize}
 
-\begin{figure}[bh] % b = bottom, t = top, h = here
-    \centering
-    \includegraphics[width=0.35\columnwidth]{figures/SomeFigure}
-    \caption{\label{fig:example}Examle figure taken from \emph{Softwareentwicklung 2}.}
-\end{figure}
+These algorithms form the core functionality of the application presented in this work and are visualized interactively to enhance user understanding.
+
+\subsection{Algorithm Visualization in Education}
+Algorithm visualization has long been a valuable tool in computer science education. By visually representing the step-by-step execution of an algorithm, it helps learners to understand its inner workings and behavior on various graph structures. However, many existing tools are limited in their interactivity or require significant setup, making them less accessible for immediate classroom use.
+
+\subsection{Technology Stack}
+The application developed in this work leverages modern web technologies to provide a flexible and interactive platform:
+\begin{itemize}
+    \item \textbf{D3.js:} A JavaScript library for creating data-driven visualizations, chosen for its flexibility and ability to render interactive graph representations.
+    \item \textbf{TypeScript:} A strongly typed superset of JavaScript that enhances development efficiency and reliability by enabling static type checking.
+    \item \textbf{Svelte:} A modern front-end framework used to build highly reactive and performant user interfaces. Its compile-time approach reduces runtime overhead.
+    \item \textbf{Vite:} A fast build tool and development server designed to optimize front-end development workflows.
+    \item \textbf{npm:} A package manager used for handling project dependencies and ensuring seamless integration of third-party libraries.
+\end{itemize}
+Initially, Graphviz was considered for implementing the visualization. While it excels in static graph rendering, it lacks the interactive capabilities required for this project. Consequently, D3.js was adopted as it provides greater flexibility and control over interactive elements. Svelte and Vite further streamline the development process, ensuring a responsive and user-friendly interface.
+
+\subsection{Applications and Educational Context}
+The primary focus of this application is in education, particularly in teaching graph theory and algorithms. By providing an environment where users can build, visualize, and experiment with graphs, the tool serves as both a learning aid for students and a teaching aid for educators. This interactive approach fosters engagement and supports deeper comprehension of graph-based concepts.
+
+In the following sections, this foundation is built upon to describe the design and implementation of the application, highlighting how these theoretical concepts and technologies were applied to create a practical and effective educational tool.

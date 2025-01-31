@@ -23,19 +23,27 @@ export const getNeighbors = (nodeD3Id: number, edges: D3Edge[]) => {
  * @param description - A descriptive message for the step.
  */
 export const addStep = (
-	visitedNodes: Set<number>,
+	visitedNodes: Set<number> = new Set<number>(),
 	steps: AlgorithmStep[],
 	currentNode: number | null,
-	description: string
+	description: string,
+	queue: number[],
+	neighbors: Array<number> = [], // New optional parameter for neighbors
+	pathToNodes: [number, number][] = [],
+	currentEdge: [number, number] | null = null,
+	visitedEdges: Array<[number, number]> = []
 ) => {
 	steps.push({
 		currentNode,
-		currentEdge: null,
+		currentEdge,
 		distances: {},
 		previous: {},
 		visitedNodes: new Set(visitedNodes), // Clone for immutability
-		visitedEdges: [],
+		visitedEdges,
 		description,
+		queue,
+		neighbors, // Add neighbors to the step
+		shortestPathsToNodes: pathToNodes
 	});
 };
 
@@ -49,7 +57,8 @@ export const addStep = (
 export const calcRowData = (
 	nodes: D3Node[],
 	steps: AlgorithmStep[],
-	curIndex: number
+	curIndex: number,
+	edges: D3Edge[] | undefined
 ) => {
 	// Set to track visited nodes across all steps up to curIndex
 	const visitedNodeD3IDs = new Set<number>();
@@ -61,13 +70,21 @@ export const calcRowData = (
 	}
 
 	// Generate static rows (headers)
-	const rowsStart = [["Vertex"], ["Visited"]];
+	//console.log(nodes, steps, curIndex);
+	const rowsStart = steps
+		.slice(0, curIndex + 1)
+		.map((step) => [String(step.currentNode ?? "-")]);
 
 	// Generate dynamic rows based on nodes and visited status
-	const rowsScrollable = [
-		nodes.map((node) => node.label || node.id), // Node labels or IDs
-		nodes.map((node) => (visitedNodeD3IDs.has(node.d3id) ? "T" : "F")), // Visited status
-	];
+	const rowsScrollable = steps
+		.slice(0, curIndex + 1)
+		.map((step, index) => [
+			step.neighbors ?? "",
+			Array.from(step.visitedNodes).join(" "),
+			step.queue,
+			String(steps[index + 1]?.currentNode ?? "-") +
+				(steps[index + 1]?.description.includes("out") ? " (up)" : ""),
+		]);
 
 	return { rowsStart, rowsScrollable };
 };

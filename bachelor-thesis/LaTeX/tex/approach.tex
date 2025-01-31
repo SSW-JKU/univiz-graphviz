@@ -1,3 +1,48 @@
-\section{Approach}
+\section{Overview}
 \label{sec:approach}
-\lipsum[1-2]
+
+The purpose of this web-based application is to provide an interactive platform for creating, visualizing, and simulating graphs and algorithms, with a focus on enhancing the educational experience for both students and educators. This chapter outlines the system's main features, its overall architecture, and the interaction between its components.
+
+\subsection{Purpose and Key Features}
+The application is designed to bridge the gap between theoretical learning and practical experimentation in graph theory and algorithm visualization. Its key features include:
+\begin{itemize}
+    \item A \textbf{graph builder} for creating and modifying directed and undirected graphs through an intuitive interface.
+    \item A \textbf{graph visualizer} that displays graphs and their properties dynamically.
+    \item Algorithm visualizations for \textbf{Dijkstra’s shortest path}, \textbf{breadth-first search (BFS)}, and \textbf{depth-first search (DFS)}.
+    \item Predefined example graphs that can be loaded for immediate use in the builder, visualizer, or algorithm simulation modes.
+    \item A lightweight and responsive interface, accessible through modern web browsers without additional installation.
+\end{itemize}
+
+The system is primarily intended for use in educational contexts, where users can create their own graphs or use predefined examples to explore graph algorithms interactively. While the tool focuses on graph visualization and algorithm simulation, it does not cover advanced topics such as graph embeddings or probabilistic graph models.
+
+\subsection{System Architecture}
+The application is structured into several interconnected subsystems, each responsible for a specific aspect of functionality:
+\begin{enumerate}
+    \item \textbf{Frontend:} Built with Svelte, the frontend provides an intuitive and interactive user interface for creating, modifying, and visualizing graphs. It communicates with the visualization engine and ensures real-time updates.
+    \item \textbf{Visualization Engine:} Powered by D3.js, this subsystem handles the rendering of graphs and animations for algorithm simulations. It supports smooth interactions, such as dragging nodes or adjusting edges.
+    \item \textbf{Algorithm Module:} Implemented in TypeScript, this module performs the computations for algorithms such as Dijkstra, BFS, and DFS. It interacts with the visualization engine to display step-by-step execution.
+    \item \textbf{Example Loader:} A component that allows users to load predefined graph examples. It integrates seamlessly with the builder and algorithm visualizer.
+\end{enumerate}
+
+\subsection{Interaction and External Dependencies}
+The system is designed to run entirely within a web browser, eliminating the need for external backend servers. It depends on modern web technologies, including:
+\begin{itemize}
+    \item \textbf{D3.js:} For dynamic graph rendering and interactive visualizations.
+    \item \textbf{TypeScript:} For robust and reliable implementation of algorithms and application logic.
+    \item \textbf{Svelte and Vite:} For building a reactive and highly performant user interface.
+    \item \textbf{npm:} For managing dependencies and ensuring compatibility with third-party libraries.
+\end{itemize}
+
+\subsection{System Interaction and Workflow}
+The application workflow is designed to be user-centric:
+\begin{itemize}
+    \item Users begin by either creating a new graph from scratch using the graph builder or loading a predefined example.
+    \item Once the graph is created or loaded, users can visualize its structure and properties.
+    \item For algorithm simulations, users can select an algorithm (e.g., Dijkstra, BFS, or DFS) and observe its execution step-by-step on the graph.
+    \item The interactive interface allows users to adjust the graph dynamically and rerun simulations as needed.
+\end{itemize}
+
+\subsection{Limitations and Scope}
+While the application provides robust functionality for graph creation, visualization, and algorithm simulation, it is not designed for advanced computational tasks such as solving large-scale optimization problems or analyzing massive datasets. Its scope is intentionally focused on education, making it simple and accessible for students and educators.
+
+In summary, the system provides a versatile platform for exploring graph theory and algorithms interactively. The architecture is designed to ensure modularity, responsiveness, and ease of use, enabling seamless integration of its various components to deliver an intuitive user experience.

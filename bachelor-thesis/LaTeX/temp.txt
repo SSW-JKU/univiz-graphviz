@@ -186,3 +186,19 @@ final system
 related work ... (guideline)
 
 100% width for screenshots in latex (includegraphics)
+
+
+Explain all steps in thesis with same example
+
+intro -> conclusio } 20 - 40 Pages
+
+bfs visited nodes
+color edges for bfs
+remove question mode button -> Future work
+    stroke-dasharray: 10 6;
+
+
+Until next meeting
+Chapters, subchapters (also whats in there)
+bfs, dfs,
+

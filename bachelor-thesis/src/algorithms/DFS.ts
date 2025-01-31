@@ -69,3 +69,94 @@ export const dfs = (
 
 	return { steps, visitedOrder };
 };
+
+type dfsNode = Map<number, dfsNodeDetails>;
+
+type dfsNodeDetails = {
+	neighbors: number[];
+	parent: number | undefined | null;
+};
+
+export const dfsNew = (nodes: D3Node[], edges: D3Edge[], startID: number) => {
+	const dfsNodeMap: dfsNode = new Map();
+	nodes.forEach((node) => {
+		const neighbors = getNeighbors(node.d3id, edges);
+		dfsNodeMap.set(node.d3id, {
+			neighbors,
+			parent: node.d3id === startID ? null : undefined,
+		});
+	});
+	const steps: AlgorithmStep[] = [];
+	addStep(undefined, steps, null, "Starting DFS algorithm");
+	const queue = [startID];
+	const test = dfsRecursive(queue, dfsNodeMap, steps);
+	addStep(test.visitedNodes, steps, null, "DFS algorithm finished");
+	console.log(test);
+	return test;
+};
+
+const dfsRecursive = (
+	queue: number[],
+	dfsNodeMap: dfsNode,
+	steps: AlgorithmStep[],
+	visitedNodes: Set<number> = new Set()
+): {
+	steps: AlgorithmStep[];
+	visitedNodes: Set<number>;
+} => {
+	if (queue.length === 0 || dfsNodeMap.size === 1) {
+		return {
+			steps,
+			visitedNodes,
+		};
+	}
+
+	const currentNode = queue.shift();
+	if (currentNode !== undefined) {
+		visitedNodes.add(currentNode);
+		const currentDfsNode = dfsNodeMap.get(currentNode);
+		if (currentDfsNode) {
+			if (currentDfsNode.parent === null) {
+				addStep(
+					visitedNodes,
+					steps,
+					currentNode,
+					`Stepping into node ${currentNode}`,
+					currentDfsNode.neighbors.filter(
+						(neighbor) => neighbor != currentDfsNode.parent
+					)
+				);
+			}
+			currentDfsNode.neighbors.forEach((neighbor) => {
+				const neighborDfsNode = dfsNodeMap.get(neighbor);
+				if (neighborDfsNode && neighbor !== currentDfsNode.parent) {
+					neighborDfsNode.parent = currentNode;
+					dfsNodeMap.set(neighbor, neighborDfsNode);
+					queue.push(neighbor);
+					visitedNodes.add(neighbor);
+					addStep(
+						visitedNodes,
+						steps,
+						neighbor,
+						`Stepping into node ${neighbor}`,
+						neighborDfsNode.neighbors.filter(
+							(neighbor) => neighbor !== currentNode
+						)
+					);
+					dfsRecursive(queue, dfsNodeMap, steps, visitedNodes);
+					addStep(
+						visitedNodes,
+						steps,
+						currentNode,
+						`Stepping out into node ${currentNode}`,
+						currentDfsNode.neighbors.filter(
+							(neighbor) => neighbor !== currentDfsNode.parent
+						)
+					);
+				}
+			});
+		}
+	}
+
+	return dfsRecursive(queue, dfsNodeMap, steps, visitedNodes);
+};
