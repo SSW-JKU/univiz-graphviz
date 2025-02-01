@@ -7,7 +7,7 @@
 
 	// Constants
 	const algorithm = AlgorithmMode.DFS;
-	const headersStart = ["Index"];
+	const headersStart = ["Current node"];
 
 	// Bindable variable
 	let isTeacherMode = false;

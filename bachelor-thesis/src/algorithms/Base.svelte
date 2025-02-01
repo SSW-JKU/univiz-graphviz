@@ -14,8 +14,14 @@
 	import { dot } from "@viz-js/lang-dot";
 	import { indentOnInput } from "@codemirror/language";
 	import { redraw } from "../components/GraphBuilder";
-	import { bfs, bfsFinal, bfsNew, bfsNewNew, testRecursiveBFS } from "../algorithms/BFS";
-	import { dfsNew as dfs } from "../algorithms/DFS";
+	import {
+		bfs,
+		bfsFinal,
+		bfsNew,
+		bfsNewNew,
+		testRecursiveBFS,
+	} from "../algorithms/BFS";
+	import { dfsNew as dfs, dfsFinal } from "../algorithms/DFS";
 	import {
 		AlgorithmMode,
 		type AlgorithmStep,
@@ -65,7 +71,7 @@
 		nodes: D3Node[],
 		step: AlgorithmStep[],
 		curIndex: number,
-		edges?: D3Edge[],
+		edges?: D3Edge[]
 	) => {
 		rowsStart: string[][];
 		rowsScrollable: string[][];
@@ -76,8 +82,10 @@
 		if (algorithm === AlgorithmMode.DIJKSTRA) {
 			headersScrollable = nodes.map((node) => `d(${node.label || node.id})`);
 			headersScrollable.push("Local Min");
-		} else {
+		} else if (algorithm === AlgorithmMode.BFS) {
 			headersScrollable = ["Neighbors", "Visited", "Queue", "Next"];
+		} else {
+			headersScrollable = ["Neighbors", "Visited", "Next"];
 		}
 	};
 
@@ -174,9 +182,10 @@
 				//steps = bfs(nodes, edges, startNode.d3id).steps;
 				// steps = bfsNew(nodes, edges, startNode.d3id).steps;
 				//steps = bfsNewNew(nodes, edges, startNode.d3id).steps
-				steps = bfsFinal(nodes, edges, startNode.d3id).steps
+				steps = bfsFinal(nodes, edges, startNode.d3id).steps;
 			} else if (algorithm === AlgorithmMode.DFS) {
-				steps = dfs(nodes, edges, startNode.d3id).steps;
+				//steps = dfs(nodes, edges, startNode.d3id).steps;
+				steps = dfsFinal(nodes, edges, startNode.d3id).steps;
 			}
 			currentStepIndex = 0;
 			if (mode === "teacher") {
@@ -219,12 +228,13 @@
 
 		d3.selectAll("[data-edge]")
 			.style("stroke", "black")
-			.style("stroke-width", "1px");
+			.style("stroke-width", "1px")
+			.style("stroke-dasharray", "0 0");
 
-		// Highlight the start node in red, if applicable
+		// Highlight the start node in yellow, if applicable
 		if (startNodeID !== null) {
 			d3.select(`[data-node="${startNodeID}"]`)
-				.style("fill", "red")
+				.style("fill", "yellow")
 				.style("stroke", "black")
 				.style("stroke-width", "1px");
 		}
@@ -281,14 +291,33 @@
 		}
 
 		// Highlight the current edge being evaluated, if applicable
-		if (step.currentEdge !== null) {
+		if (step.currentEdge !== null && !step.curPath) {
 			const curEdge = getEdge(edges, step.currentEdge[0], step.currentEdge[1]);
 			if (curEdge) {
 				d3.select(`[data-edge="${curEdge.from.d3id}->${curEdge.to.d3id}"]`)
 					.style("stroke", "red")
 					.style("stroke-width", "3px");
 			}
+		} else if (step.curPath) {
+			step.curPath.forEach((path) => {
+				const curEdge = getEdge(edges, path[0], path[1]);
+				if (curEdge) {
+					d3.select(`[data-edge="${curEdge.from.d3id}->${curEdge.to.d3id}"]`)
+						.style("stroke", "red")
+						.style("stroke-width", "3px");
+				}
+			});
 		}
+
+		step.unneededEdges?.forEach((unneededEdge) => {
+			const edge = getEdge(edges, unneededEdge[0], unneededEdge[1]);
+			if (edge) {
+				d3.select(`[data-edge="${edge.from.d3id}->${edge.to.d3id}"]`).style(
+					"stroke-dasharray",
+					"10 6"
+				);
+			}
+		});
 
 		if (algorithm === AlgorithmMode.DIJKSTRA) {
 			tableRows = calcRowData(nodes, steps, currentStepIndex);

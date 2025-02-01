@@ -101,6 +101,7 @@ export const bfsFinal = (
 	const pathMap: Map<number, [number, number][]> = new Map();
 	const seenEdges: [number, number][] = []
 	const seenNodes: Set<number> = new Set();
+	const uselessEdges: [number, number][] = [];
 
 	// addStep(
 	// 	visitedNodes,
@@ -131,11 +132,22 @@ export const bfsFinal = (
 		const neighborIds = getNeighbors(currentId, edges);
 		visitedNodes.add(currentId);
 		seenNodes.delete(currentId)
+		const curParent = parentMap.get(currentId)
 		neighborIds.forEach((neighborId) => {
 			if (!parentMap.has(neighborId)) {
 				parentMap.set(neighborId, currentId);
 				seenEdges.push([currentId, neighborId])
 				seenNodes.add(neighborId)
+			} else if (curParent && neighborId !== curParent) {
+				let pushToUseless: boolean = true;
+				uselessEdges.forEach(uselessEdge => {
+					if (currentId === uselessEdge[0] && neighborId === uselessEdge[1] || currentId === uselessEdge[1] && neighborId === uselessEdge[0]) {
+						pushToUseless = false;
+					}
+				})
+				if (pushToUseless) {
+					uselessEdges.push([currentId, neighborId])
+				}
 			}
 		});
 
@@ -164,7 +176,9 @@ export const bfsFinal = (
 			queue: structuredClone(queue),
 			neighbors: neighborIds, // Add neighbors to the step
 			shortestPathsToNodes: structuredClone(seenEdges),
-			seenButNotVisitedNodes: Array.from(seenNodes)
+			seenButNotVisitedNodes: Array.from(seenNodes),
+			unneededEdges: structuredClone(uselessEdges),
+			curPath: structuredClone(pathMap.get(currentId))
 		});
 	}
 
@@ -177,9 +191,11 @@ export const bfsFinal = (
 		visitedEdges: structuredClone(visitedEdges),
 		description: "BFS complete.",
 		queue: structuredClone(queue),
+		unneededEdges: structuredClone(uselessEdges)
 	});
 	const visitedOrder = Array.from(visitedNodes);
-	console.log({steps, visitedOrder, parentMap, pathMap, visitedEdges});
+	const blah = structuredClone(uselessEdges)
+	console.log({steps, visitedOrder, parentMap, pathMap, visitedEdges, blah});
 	return { steps, visitedOrder };
 };
 

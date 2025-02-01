@@ -43,7 +43,7 @@ export const addStep = (
 		description,
 		queue,
 		neighbors, // Add neighbors to the step
-		shortestPathsToNodes: pathToNodes
+		shortestPathsToNodes: pathToNodes,
 	});
 };
 
@@ -75,16 +75,28 @@ export const calcRowData = (
 		.slice(0, curIndex + 1)
 		.map((step) => [String(step.currentNode ?? "-")]);
 
+	const hasQueue = steps.some((step) => step.queue?.length);
+
 	// Generate dynamic rows based on nodes and visited status
-	const rowsScrollable = steps
+	const rowsScrollable: string[][] = steps
 		.slice(0, curIndex + 1)
-		.map((step, index) => [
-			step.neighbors ?? "",
-			Array.from(step.visitedNodes).join(" "),
-			step.queue,
-			String(steps[index + 1]?.currentNode ?? "-") +
-				(steps[index + 1]?.description.includes("out") ? " (up)" : ""),
-		]);
+		.map((step, index) => {
+			const row = [
+				step.neighbors?.length ? String(step.neighbors) : "-",
+				Array.from(step.visitedNodes).length > 0
+					? Array.from(step.visitedNodes).join(" ")
+					: "-",
+				String(steps[index + 1]?.currentNode ?? "-") +
+					(steps[index + 1]?.description.includes("out") ? " (up)" : ""),
+			];
+
+			// Insert queue only if hasQueue is true
+			if (hasQueue) {
+				row.splice(2, 0, step.queue?.length ? String(step.queue) : "-"); // Insert queue at index 2
+			}
+
+			return row;
+		});
 
 	return { rowsStart, rowsScrollable };
 };
