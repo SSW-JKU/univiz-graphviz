@@ -14,6 +14,11 @@ export const modes = [
 		description:
 			"The Graph Visualizer allows you to create and manipulate graphs interactively. Build directed or undirected graphs and observe their properties, connections, and structures. It's perfect for experimenting with graph theory concepts.",
 	},
+	{
+		title: "Graph Examples",
+		description:
+			"Test and modify graph algorithms with predefined editable examples. Choose from sample graphs for shortest path (Dijkstra's algorithm), minimum spanning tree (Prim’s/Kruskal’s algorithm), or depth-first and breadth-first search. They can also be opened directly in the edit mode.",
+	},
 ];
 
 export const algorithms = [

@@ -14,14 +14,8 @@
 	import { dot } from "@viz-js/lang-dot";
 	import { indentOnInput } from "@codemirror/language";
 	import { redraw } from "../components/GraphBuilder";
-	import {
-		bfs,
-		bfsFinal,
-		bfsNew,
-		bfsNewNew,
-		testRecursiveBFS,
-	} from "../algorithms/BFS";
-	import { dfsNew as dfs, dfsFinal } from "../algorithms/DFS";
+	import { bfs } from "../algorithms/BFS";
+	import { dfs } from "../algorithms/DFS";
 	import {
 		AlgorithmMode,
 		type AlgorithmStep,
@@ -55,7 +49,6 @@
 
 	// Flags for mode states
 	export let isTeacherMode = false;
-	export let isQuestionMode = false;
 
 	// Collapsible panel state
 	let showEditor = true;
@@ -105,7 +98,7 @@
 								updateGraph();
 							}
 						}),
-						EditorView.editable.of(!isTeacherMode && !isQuestionMode),
+						EditorView.editable.of(!isTeacherMode),
 					],
 				}),
 				parent: editorContainer,
@@ -163,14 +156,14 @@
 					}
 				}),
 				EditorView.editable.of(!writable),
-				isTeacherMode || isQuestionMode ? readOnlyTheme : [],
+				isTeacherMode ? readOnlyTheme : [],
 			],
 		});
 		// Apply the new state to the editor
 		editor.setState(newState);
 	};
 
-	const runAlgorithm = (mode: "teacher" | "question") => {
+	const runAlgorithm = (mode: "teacher") => {
 		const selected = get(selectedNodes);
 		if (selected.length === 1) {
 			const startNode = selected[0];
@@ -179,19 +172,13 @@
 			if (algorithm === AlgorithmMode.DIJKSTRA) {
 				steps = dijkstra(nodes, edges, startNode.d3id).steps;
 			} else if (algorithm === AlgorithmMode.BFS) {
-				//steps = bfs(nodes, edges, startNode.d3id).steps;
-				// steps = bfsNew(nodes, edges, startNode.d3id).steps;
-				//steps = bfsNewNew(nodes, edges, startNode.d3id).steps
-				steps = bfsFinal(nodes, edges, startNode.d3id).steps;
+				steps = bfs(nodes, edges, startNode.d3id).steps;
 			} else if (algorithm === AlgorithmMode.DFS) {
-				//steps = dfs(nodes, edges, startNode.d3id).steps;
-				steps = dfsFinal(nodes, edges, startNode.d3id).steps;
+				steps = dfs(nodes, edges, startNode.d3id).steps;
 			}
 			currentStepIndex = 0;
 			if (mode === "teacher") {
 				isTeacherMode = true;
-			} else if (mode === "question") {
-				isQuestionMode = true;
 			}
 			updateEditorState(isTeacherMode);
 			resetGraph();
@@ -450,18 +437,10 @@
 				>
 					Run Algorithm in Teacher-Mode
 				</button>
-				<button
-					on:click={() => runAlgorithm("question")}
-					disabled={$selectedNodes.length !== 1 || isTeacherMode}
-				>
-					Run Algorithm in Question-Mode
-				</button>
-			{:else if $selectedNodes.length !== 1 && !isTeacherMode && !isQuestionMode}
+			{:else if $selectedNodes.length !== 1 && !isTeacherMode}
 				Please select a node to start the algorithm
 			{:else if isTeacherMode}
 				Algorithm is currently running in teacher-mode
-			{:else if isQuestionMode}
-				Algorithm is currently running in question-mode
 			{/if}
 
 			{#if isTeacherMode}
