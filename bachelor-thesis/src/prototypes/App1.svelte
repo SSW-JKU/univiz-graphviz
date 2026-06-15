@@ -14,13 +14,14 @@
   /////////////////////////////////////////////////////////////////////////////////////
 
   let graphContainer: HTMLDivElement;
+  type NodeSelection = d3.Selection<SVGGElement, unknown, HTMLElement, any>;
   let nodes: Writable<string[]> = writable([]);
   let dotSrc = "digraph  {}";
   let graph: Graphviz<BaseType, any, BaseType, any>;
-  let nodeElements: d3.Selection<BaseType, unknown, HTMLElement, any>[] = [];
+  let nodeElements: NodeSelection[] = [];
   const nodeIDPrefix = "node";
   let nodePositions: Map<string, { x: number; y: number }> = new Map();
-  let selectedNodes: d3.Selection<BaseType, unknown, HTMLElement, any>[] = [];
+  let selectedNodes: NodeSelection[] = [];
   let edges: string[] = [];
 
   nodes.subscribe((newItems) => {
@@ -75,12 +76,8 @@
     nodes.update((existingNodes) => [...existingNodes, newNode]);
   }
 
-  function getNode(
-    id: number
-  ): d3.Selection<BaseType, unknown, HTMLElement, any> {
-    const nodeB: d3.Selection<BaseType, unknown, HTMLElement, any> = d3.select(
-      `#${nodeIDPrefix}${id}`
-    );
+  function getNode(id: number): NodeSelection {
+    const nodeB = d3.select<SVGGElement, unknown>(`#${nodeIDPrefix}${id}`);
     return nodeB;
   }
 
@@ -88,14 +85,13 @@
   //////                        Update node position                             //////
   /////////////////////////////////////////////////////////////////////////////////////
 
-  function updateNodePosition(
-    node: d3.Selection<BaseType, unknown, HTMLElement, any>
-  ) {
-    const nodeElement = node.node() as SVGGElement;
+  function updateNodePosition(node: NodeSelection) {
+    const nodeElement = node.node();
     if (nodeElement) {
       const transform = nodeElement.getAttribute("transform");
-      if (transform) {
-        const [_, x, y] = transform.match(/translate\(([^,]+),([^,]+)\)/);
+      const match = transform?.match(/translate\(([^,]+),([^,]+)\)/);
+      if (match) {
+        const [, x, y] = match;
         nodePositions.set(nodeElement.id, {
           x: parseFloat(x),
           y: parseFloat(y),
@@ -108,12 +104,14 @@
 
   function setNodePosition() {
     nodeElements.forEach((nodeElement) => {
-      const nodePos = nodeElement.node() as SVGGElement;
-      const nodeId = nodePos.id;
-      const position = nodePositions.get(nodeId);
-      if (position) {
+      const nodePos = nodeElement.node();
+      if (nodePos) {
+        const nodeId = nodePos.id;
+        const position = nodePositions.get(nodeId);
+        if (position) {
         const { x, y } = position;
         nodeElement.attr("transform", `translate(${x},${y})`);
+        }
       }
     });
   }
@@ -126,12 +124,14 @@
   function updateEdgePositions() {
     edges.forEach((edge) => {
       const [sourceNodeId, targetNodeId] = edge.split("->");
-      const sourceNodePosition = nodePositions.get(
-        findNodeByLabel(sourceNodeId).node().id
-      );
-      const targetNodePosition = nodePositions.get(
-        findNodeByLabel(targetNodeId).node().id
-      );
+      const sourceNode = findNodeByLabel(sourceNodeId)?.node();
+      const targetNode = findNodeByLabel(targetNodeId)?.node();
+      const sourceNodePosition = sourceNode
+        ? nodePositions.get(sourceNode.id)
+        : undefined;
+      const targetNodePosition = targetNode
+        ? nodePositions.get(targetNode.id)
+        : undefined;
       if (sourceNodePosition && targetNodePosition) {
         const edgePath = document.getElementById(
           `edge1` // TODO Change
@@ -152,15 +152,10 @@
     });
   }
 
-  function findNodeByLabel(
-    label: string
-  ): d3.Selection<BaseType, unknown, HTMLElement, any> | null {
+  function findNodeByLabel(label: string): NodeSelection | null {
     // Iterate through the node elements to find the node with the given label
     for (const nodeElement of nodeElements) {
-      const nodeLabel = nodeElement
-        .text()
-        .trim()
-        .match(/node([^\n]+)/)[0];
+      const nodeLabel = nodeElement.text().trim().match(/node([^\n]+)/)?.[0];
       if (nodeLabel === label) {
         return nodeElement;
       }
@@ -174,7 +169,7 @@
       element
         .call(
           d3
-            .drag<BaseType, unknown>()
+            .drag<SVGGElement, unknown>()
             .on("start", dragstarted)
             .on("drag", dragged)
             .on("end", dragended)
@@ -226,7 +221,7 @@
   /////////////////////////////////////////////////////////////////////////////////////
 
   function enableSelect(
-    node: d3.Selection<BaseType, unknown, HTMLElement, any>
+    node: NodeSelection
   ) {
     node
       .selectAll("*")
@@ -234,9 +229,7 @@
       .on("click", () => toggleSelection(node));
   }
 
-  function toggleSelection(
-    node: d3.Selection<BaseType, unknown, HTMLElement, any>
-  ) {
+  function toggleSelection(node: NodeSelection) {
     node.classed(
       "selected",
       !node.classed("selected") && selectedNodes.length < 2
@@ -262,11 +255,14 @@
       const nodeText1 = selectedNodes[0]
         .text()
         .trim()
-        .match(/node([^\n]+)/)[0]; // TODO make better
+        .match(/node([^\n]+)/)?.[0]; // TODO make better
       const nodeText2 = selectedNodes[1]
         .text()
         .trim()
-        .match(/node([^\n]+)/)[0];
+        .match(/node([^\n]+)/)?.[0];
+      if (!nodeText1 || !nodeText2) {
+        return;
+      }
       const position = dotSrc.lastIndexOf("}");
       const edgeToAdd = `${nodeText1}->${nodeText2}`;
       edges.push(edgeToAdd);

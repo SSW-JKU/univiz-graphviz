@@ -89,7 +89,7 @@
 			// Process data only if `currentNode` is not null or undefined
 			if (step.currentNode !== null && step.currentNode !== undefined) {
 				// Get visited nodes by converting their IDs to labels
-				const visitedNodeD3IDs: number[] = step.visitedNodes.values().toArray();
+				const visitedNodeD3IDs: number[] = Array.from(step.visitedNodes.values());
 
 				// Remove entries from `rowMap` if their key is not in `visitedNodeD3IDs`
 				rowMap.forEach((_, key) => {
