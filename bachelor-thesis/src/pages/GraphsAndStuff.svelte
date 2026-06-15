@@ -1,9 +1,10 @@
 <script lang="ts">
-  import App5 from "../modes/GraphBuilder.svelte";
+  import GraphBuilder from "../components/GraphBuilder.svelte";
+  export let directedGraph: boolean;
 </script>
 
 <div class="about-container">
-  <App5 />
+  <GraphBuilder directedGraph={directedGraph}/>
 </div>
 
 <style>

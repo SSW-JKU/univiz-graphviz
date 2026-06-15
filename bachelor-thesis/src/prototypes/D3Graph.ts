@@ -68,8 +68,8 @@ export const getGraphNodeByID = () => {
 
 }
 
-export const getSVGNodeByID = (id: number): SVGGElement => {
-
+export const getSVGNodeByID = (id: number): SVGGElement | null => {
+  return document.getElementById(`node${id}`) as SVGGElement | null;
 }
 
 //////////////////// UNUSED

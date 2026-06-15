@@ -3,7 +3,7 @@
   import App2 from "./App2.svelte";
   import App3 from "./App3.svelte";
   import App4 from "./App4.svelte";
-  import App5 from "../modes/GraphBuilder.svelte";
+  import App5 from "../components/GraphBuilder.svelte";
 
   let selectedOption = 5;
 
@@ -53,6 +53,6 @@
   <App3 />
 {:else if selectedOption === 4}
   <App4 />
-{:else if selectedOption === 5}
-  <App5 />
+<!-- {:else if selectedOption === 5}
+  <App5 /> -->
 {/if}

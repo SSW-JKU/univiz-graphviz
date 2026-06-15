@@ -1,14 +1,16 @@
 import "./app.css";
-import TestApp from "./TestApp.svelte";
+import { injectCSSVariables } from "./injectStyles";
+import App from "./App.svelte";
 
+injectCSSVariables();
 
 let app;
 const appElement = document.getElementById("app");
 if (appElement) {
-  app = new TestApp({
-    target: appElement,
-  });
+	app = new App({
+		target: appElement,
+	});
 } else {
-  console.error('Element with id "app" not found.');
+	console.error('Element with id "app" not found.');
 }
 export default app;

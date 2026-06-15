@@ -27,8 +27,8 @@
     }
 
     // Setup graphviz renderer with init value
-    graphviz = d3
-      .select(graphSVG)
+    graphviz = (d3
+      .select(graphSVG) as any)
       .graphviz()
       .zoom(false)
       .renderDot($dotSrcStore)

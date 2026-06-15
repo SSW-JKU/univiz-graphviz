@@ -4,9 +4,9 @@
   import * as d3 from "d3-selection";
   import { graphviz } from "d3-graphviz";
 
-  import BFS from "./algorithms/BFS.svelte";
-  import DFS from "./algorithms/DFS.svelte";
-  import Dijkstra from "./algorithms/Dijkstra.svelte";
+  import BFS from "../algorithms/BFS.svelte";
+  import DFS from "../algorithms/DFS.svelte";
+  import Dijkstra from "../algorithms/Dijkstra.svelte";
 
   enum Algorithm {
     BFS = "BFS",

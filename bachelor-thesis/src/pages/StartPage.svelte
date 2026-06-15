@@ -1,139 +1,152 @@
 <script lang="ts">
+	import { algorithms, modes } from "./StartPage";
 </script>
 
-<div class="start-page">
-  <div class="content">
-    <h1>Welcome to Guck's Bachelorthesis</h1>
-    <p>
-      In the course <strong>Algorithmen und Datenstrukturen 2</strong> (Algorithms
-      and Data Structures 2) at the Johannes Kepler University, students learn about
-      graphs and graph flow algorithms. Currently, the teaching materials for these
-      topics are limited to slides and blackboard explanations. To enhance the learning
-      experience for students and provide lecturers with more effective teaching
-      aids, an interactive and playful visualization tool for graph and graph flow
-      algorithms can be developed.
-    </p>
+<main class="about-container">
+	<div class="scroll-box">
+		<section class="intro">
+			<h1>About This Application</h1>
+			<p>
+				This application is a platform for visualizing various graph structures
+				and algorithms. It allows you to explore how different algorithms work
+				on graphs, and interact with visual representations of the data
+				structures. Below, you will find details about the modes and algorithms
+				available.
+			</p>
+		</section>
 
-    <p>
-      The goal of this bachelor's thesis is to create an interactive
-      visualization tool that supports lecturers in teaching and helps students
-      learn graph and graph flow algorithms more effectively. The tool should
-      include the following features:
-    </p>
+		<section class="mode-section">
+			<h2>Available Modes</h2>
+			{#each modes as mode}
+				<div class="mode-card">
+					<h3>{mode.title}</h3>
+					<p>{mode.description}</p>
+				</div>
+			{/each}
+		</section>
 
-    <ul>
-      <li>
-        <strong>Graph building and editing:</strong> Allow users to add, remove,
-        and edit nodes and edges in a graph. Enable users to change node names and
-        edge weights to create custom graph structures. Provide functionality to
-        automatically lay out graphs for better visualization.
-      </li>
-      <li>
-        <strong>Visualization of various graph algorithms:</strong> Implement visualizations
-        for Depth-First Search (DFS), Breadth-First Search (BFS), and Dijkstra's
-        shortest path algorithm. Visualize the step-by-step process of each algorithm,
-        highlighting the nodes and edges being traversed or updated. Optionally,
-        consider including the Ford-Fulkerson flow algorithm.
-      </li>
-      <li>
-        <strong>Modes for teaching and learning:</strong> Step-by-step mode for lecturers
-        to present each algorithm's process in detail, and Play mode to engage students
-        by asking them questions and providing immediate feedback on their answers.
-      </li>
-      <li>
-        <strong>Web application:</strong> Build the tool as a web application with
-        a user-friendly interface using modern web technologies. Ensure it is responsive
-        and compatible with modern web browsers.
-      </li>
-    </ul>
+		<section class="algorithm-section">
+			<h2>Algorithms</h2>
+			<p>
+				This application also offers implementations of the most important graph
+				traversal algorithms:
+			</p>
 
-    <p>
-      The interactive visualization tool should be developed with a focus on
-      usability and educational value. It aims to provide an engaging and
-      visually appealing experience for both lecturers and students, making it
-      easier to teach and learn graph and graph flow algorithms.
-    </p>
-  </div>
-</div>
+			<ul class="algorithm-list">
+				{#each algorithms as algorithm}
+					<li>
+						<strong>{algorithm.title}:</strong>
+						{algorithm.description}
+					</li>
+				{/each}
+			</ul>
+			<p>
+				Each algorithm is visualized step by step, giving you insights into
+				their inner workings and decision-making processes. Experiment with
+				custom graphs or test the algorithms on provided examples to see how
+				they perform.
+			</p>
+		</section>
+
+		<section class="get-started-section">
+			<h2>Get Started</h2>
+			<p>
+				Ready to explore? Use the navigation menu to build your first graph, run
+				an algorithm, or dive into one of the test graphs. Whether you're here
+				to learn or experiment, this application provides the tools you need to
+				succeed.
+			</p>
+			<p>
+				Have fun exploring graph algorithms and structures, and enjoy the
+				journey into the world of graph theory!
+			</p>
+		</section>
+	</div>
+	<div class="spacer"></div>
+</main>
 
 <style>
-  .start-page {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background: lightgray;
-    color: white;
-    box-sizing: border-box;
-    overflow: auto;
-    padding: 10px; 
-  }
+	.about-container {
+		font-family: Arial, sans-serif;
+		color: var(--textColor);
+		max-width: 90%;
+		margin: 0 auto;
+		padding: 2rem;
+		height: calc(100vh - 4rem);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
 
-  .content {
-    max-width: 900px;
-    width: 100%;
-    max-height: 85vh;
-    padding: 1rem;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 10px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    color: #fff;
-    box-sizing: border-box;
-    overflow-y: auto;
-  }
+	.scroll-box {
+		width: 100%;
+		max-width: 1000px;
+		height: fit-content;
+		overflow-y: auto;
+		padding: 2rem;
+		background-color: #fff;
+		border: 1px solid #ccc;
+		border-radius: 8px;
+		box-shadow: var(--boxShadow);
+	}
 
-  h1 {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    text-align: center;
-  }
+	h1 {
+		font-size: var(--fontLarge);
+		color: var(--primary);
+		margin-bottom: 1rem;
+	}
 
-  p {
-    font-size: 1.2rem;
-    margin-bottom: 1rem;
-    line-height: 1.6;
-  }
+	h2 {
+		font-size: var(--fontMedium);
+		margin-bottom: 1rem;
+		border-bottom: 2px solid var(--primary);
+		padding-bottom: 0.5rem;
+	}
 
-  ul {
-    list-style-type: disc;
-    margin-left: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
+	h3 {
+		font-size: var(--fontSmall);
+		color: var(--secondary);
+		margin-bottom: 0.5rem;
+	}
 
-  ul li {
-    margin-bottom: 1rem;
-  }
+	p {
+		font-size: var(--fontRegular);
+		line-height: 1.6;
+		margin-bottom: 1.5rem;
+	}
 
-  strong {
-    color: #ff9e2c;
-  }
+	.mode-card,
+	.get-started-section {
+		background-color: var(--background);
+		padding: 1.5rem;
+		margin-bottom: 1.5rem;
+		border-left: 5px solid var(--primary);
+		border-radius: 8px;
+	}
 
-  /* Responsive adjustments for smaller screens */
-  @media (max-width: 768px) {
-    .content {
-      padding: 1.5rem;
-    }
+	.algorithm-list li {
+		margin-bottom: 1rem;
+		padding: 1rem;
+		border-left: 4px solid var(--primary);
+		background-color: #f5f5f5;
+		border-radius: 4px;
+	}
 
-    h1 {
-      font-size: 2.5rem;
-    }
+	.scroll-box::-webkit-scrollbar {
+		width: 12px;
+	}
 
-    p {
-      font-size: 1.1rem;
-    }
-  }
+	.scroll-box::-webkit-scrollbar-track {
+		background: #f1f1f1;
+	}
 
-  @media (max-width: 500px) {
-    .content {
-      padding: 1rem;
-    }
+	.scroll-box::-webkit-scrollbar-thumb {
+		background-color: #888;
+		border-radius: 10px;
+		border: 3px solid #f1f1f1;
+	}
 
-    h1 {
-      font-size: 2rem;
-    }
-
-    p {
-      font-size: 1rem;
-    }
-  }
+	.scroll-box::-webkit-scrollbar-thumb:hover {
+		background-color: #555;
+	}
 </style>
