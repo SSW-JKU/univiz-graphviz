@@ -1,11 +1,17 @@
 <script lang="ts">
 	import { AlgorithmMode } from "../algorithms/types";
+	import type { PedagogicalAnnotation } from "../algorithms/types";
+	import { TablePetAnnotationManager } from "./PetAnnotations";
+	import type { D3Node } from "../types/Graph";
 
 	export let headersStart: string[] = [];
 	export let headersScrollable: string[] = [];
 	export let rowsStart: Array<string[]> = [];
 	export let rowsScrollable: Array<string[]> = [];
 	export let algorithmMode: AlgorithmMode;
+	export let nodes: D3Node[] = [];
+	export let showPets = false;
+	export let petAnnotations: PedagogicalAnnotation[] = [];
 
 	// Buffers to store the previous states
 	let previousRowsStart: Array<string[]> = [];
@@ -14,6 +20,7 @@
 	// Arrays to track changes (same dimensions as rowsStart and rowsScrollable)
 	let changesRowsStart: Array<boolean[]> = [];
 	let changesRowsScrollable: Array<boolean[]> = [];
+	const tablePetAnnotationManager = new TablePetAnnotationManager();
 
 	// Update tracking for rowsStart
 	$: {
@@ -39,6 +46,14 @@
 			previousRowsScrollable = JSON.parse(JSON.stringify(rowsScrollable));
 		}
 	}
+
+	$: {
+		if (showPets) {
+			tablePetAnnotationManager.setAnnotations(petAnnotations);
+		} else {
+			tablePetAnnotationManager.clear();
+		}
+	}
 </script>
 
 <div class="table-scroll">
@@ -57,8 +72,15 @@
 						class={index === headersScrollable.length - 1 &&
 						algorithmMode === AlgorithmMode.DIJKSTRA
 							? "sticky-right"
-							: ""}>{header}</th
+							: ""}
+						class:pet-highlight-cell={(nodes[index] &&
+							tablePetAnnotationManager.hasDistanceHighlight(nodes[index].d3id)) ||
+							(index === headersScrollable.length - 1 &&
+								algorithmMode === AlgorithmMode.DIJKSTRA &&
+								tablePetAnnotationManager.hasLocalMinHighlight())}
 					>
+						{header}
+					</th>
 				{/each}
 			</tr>
 		</thead>
@@ -85,6 +107,11 @@
 									? "sticky-right"
 									: ""
 							} ${changesRowsScrollable[rowIndex]?.[index] ? "highlight" : ""}`}
+							class:pet-highlight-cell={(nodes[index] &&
+								tablePetAnnotationManager.hasDistanceHighlight(nodes[index].d3id)) ||
+								(algorithmMode === AlgorithmMode.DIJKSTRA &&
+									index === rowsScrollable[rowIndex].length - 1 &&
+									tablePetAnnotationManager.hasLocalMinHighlight())}
 						>
 							{@html scrollableCell}
 						</td>
@@ -106,6 +133,17 @@
 	td.highlight {
 		background-color: lightgreen !important; /* Ensures it overrides the default */
 		transition: background-color 0.5s ease-out; /* Smooth fade-out for the highlight */
+	}
+
+	th.pet-highlight-cell,
+	td.pet-highlight-cell {
+		background-color: #fff4b8 !important;
+		color: #111 !important;
+		box-shadow: inset 0 0 0 3px #ffc552;
+	}
+
+	td.pet-highlight-cell :global(*) {
+		color: #111 !important;
 	}
 
 	.table-scroll {

@@ -269,6 +269,7 @@ const redrawLines = (
 			const svgHeight = svg.getBoundingClientRect().height;
 			return svgHeight - d.textPos[1];
 		})
+		.attr("data-edge", (d) => `${d.from.d3id}->${d.to.d3id}`)
 		.text((d) => ` ${d.weight}`) // No need to check for null
 		.style("font-size", "12px")
 		.style("fill", "black")

@@ -19,17 +19,23 @@
 	import {
 		AlgorithmMode,
 		type AlgorithmStep,
+		type PedagogicalAnnotation,
+		type PetAskAnnotation,
+		type PetQuestionAnswer,
+		type PetQuestionOption,
 		type TableRows,
 	} from "../algorithms/types";
 	import DijkstraTable from "../components/DijkstraTable.svelte";
 	import { alg } from "@dagrejs/graphlib";
 	import { readOnlyTheme } from "./base";
+	import { SVGPetAnnotationManager } from "../components/PetAnnotations";
 
-	let svg: SVGElement;
+	let svg: SVGSVGElement;
 	let edgeLayout: EdgeLayout[];
 	const selectedNodes = writable<D3Node[]>([]);
 	let selectedEdge = writable<D3Edge | null>(null);
 	let viz: Viz;
+	let petAnnotationManager: SVGPetAnnotationManager | null = null;
 
 	export let dotSrc: string = "";
 	let nodes: D3Node[] = [];
@@ -49,6 +55,14 @@
 
 	// Flags for mode states
 	export let isTeacherMode = false;
+	let showPets = true;
+	// Keys are PET annotation IDs; values store the selected answer and feedback
+	// for the corresponding question annotation.
+	let petAnswers: Record<string, PetQuestionAnswer> = {};
+	let visiblePetAnnotations: PedagogicalAnnotation[] = [];
+	let activePetGate: PetAskAnnotation | null = null;
+	let currentPetFeedback = "";
+	let petGateBlocksNext = false;
 
 	// Collapsible panel state
 	let showEditor = true;
@@ -58,7 +72,7 @@
 	export let headersStart: string[] = [];
 	export let headersScrollable: string[] = [];
 
-	let tableRows: TableRows;
+	let tableRows: TableRows = { rowsStart: [], rowsScrollable: [] };
 
 	export let calcRowData: (
 		nodes: D3Node[],
@@ -82,7 +96,75 @@
 		}
 	};
 
+	const currentPetAnnotations = (): PedagogicalAnnotation[] => {
+		return showPets && isTeacherMode
+			? steps[currentStepIndex]?.petAnnotations ?? []
+			: [];
+	};
+
+	const currentGatedQuestion = (): PetAskAnnotation | null => {
+		return (
+			currentPetAnnotations().find(
+				(annotation): annotation is PetAskAnnotation =>
+					annotation.action === "ask" && annotation.payload.gate !== false
+			) ?? null
+		);
+	};
+
+	const updatePetGateState = () => {
+		activePetGate = currentGatedQuestion();
+		const answer = activePetGate ? petAnswers[activePetGate.id] : undefined;
+		currentPetFeedback = answer?.feedback ?? "";
+		petGateBlocksNext = Boolean(activePetGate && !answer?.correct);
+	};
+
+	const renderPetAnnotations = () => {
+		if (!petAnnotationManager) return;
+
+		const annotations = currentPetAnnotations();
+		visiblePetAnnotations = annotations;
+		if (annotations.length === 0) {
+			petAnnotationManager.clear();
+		} else {
+			petAnnotationManager.setAnnotations(annotations);
+		}
+		updatePetGateState();
+	};
+
+	const isCurrentPetGateSatisfied = () => {
+		const gate = currentGatedQuestion();
+		if (!gate) return true;
+		return petAnswers[gate.id]?.correct === true;
+	};
+
+	const canMoveForwardOneStep = () => {
+		return !showPets || isCurrentPetGateSatisfied();
+	};
+
+	function handlePetAnswer(annotationId: string, option: PetQuestionOption) {
+		petAnswers = {
+			...petAnswers,
+			[annotationId]: {
+				optionId: option.id,
+				correct: option.correct,
+				feedback: option.feedback,
+			},
+		};
+		renderPetAnnotations();
+	}
+
+	$: if (petAnnotationManager && isTeacherMode) {
+		renderPetAnnotations();
+	}
+
 	onMount(() => {
+		petAnnotationManager = new SVGPetAnnotationManager({
+			getSvg: () => svg ?? null,
+			getRootG: () => svg?.querySelector("g") ?? null,
+			getAnswer: (annotationId: string) => petAnswers[annotationId],
+			onAnswer: handlePetAnswer,
+		});
+
 		(async () => {
 			viz = await instance();
 			editor = new EditorView({
@@ -111,6 +193,7 @@
 
 	onDestroy(() => {
 		editor.destroy();
+		petAnnotationManager?.clear();
 	});
 
 	const updateGraph = async () => {
@@ -132,6 +215,7 @@
 					directedGraph,
 					false
 				);
+				petAnnotationManager?.clear();
 				errorMessage = "";
 			} catch (error) {
 				errorMessage =
@@ -177,6 +261,7 @@
 				steps = dfs(nodes, edges, startNode.d3id).steps;
 			}
 			currentStepIndex = 0;
+			petAnswers = {};
 			if (mode === "teacher") {
 				isTeacherMode = true;
 			}
@@ -311,10 +396,11 @@
 		} else {
 			tableRows = calcRowData(nodes, steps, currentStepIndex, edges);
 		}
+		renderPetAnnotations();
 	};
 
 	const nextStep = () => {
-		if (currentStepIndex < steps.length - 1) {
+		if (currentStepIndex < steps.length - 1 && canMoveForwardOneStep()) {
 			currentStepIndex++;
 			highlightStep(steps[currentStepIndex]);
 		}
@@ -342,6 +428,9 @@
 			false
 		);
 		currentDescription = "";
+		visiblePetAnnotations = [];
+		petAnnotationManager?.clear();
+		updatePetGateState();
 	};
 
 	const exitTeacherMode = () => {
@@ -349,6 +438,11 @@
 		updateEditorState(isTeacherMode);
 		resetGraph();
 		currentDescription = "";
+		petAnswers = {};
+		currentPetFeedback = "";
+		activePetGate = null;
+		petGateBlocksNext = false;
+		petAnnotationManager?.clear();
 	};
 
 	const findNodeByD3ID = (gvid: number): D3Node | undefined => {
@@ -366,19 +460,29 @@
 	const toggleTable = () => (showTable = !showTable);
 
 	const handleSliderChange = (event: Event) => {
-		const sliderValue = Number((event.target as HTMLInputElement).value);
-		currentStepIndex = sliderValue;
+		const slider = event.target as HTMLInputElement;
+		const sliderValue = Number(slider.value);
+		if (sliderValue > currentStepIndex) {
+			if (!canMoveForwardOneStep()) {
+				slider.value = String(currentStepIndex);
+				return;
+			}
+			currentStepIndex = showPets
+				? Math.min(sliderValue, currentStepIndex + 1)
+				: sliderValue;
+		} else {
+			currentStepIndex = sliderValue;
+		}
+		slider.value = String(currentStepIndex);
 		highlightStep(steps[currentStepIndex]);
 	};
 
 	function handleScroll(event: WheelEvent) {
-		// Adjust the slider value based on the scroll delta
-		let stepChange = event.deltaY > 0 ? 1 : -1; // Scroll down increases, scroll up decreases
-		currentStepIndex = Math.min(
-			steps.length - 1,
-			Math.max(0, currentStepIndex + stepChange)
-		);
-		highlightStep(steps[currentStepIndex]);
+		if (event.deltaY > 0) {
+			nextStep();
+		} else {
+			previousStep();
+		}
 	}
 </script>
 
@@ -418,6 +522,9 @@
 					rowsStart={isTeacherMode ? tableRows.rowsStart || [] : []}
 					rowsScrollable={isTeacherMode ? tableRows.rowsScrollable || [] : []}
 					algorithmMode={algorithm}
+					{nodes}
+					showPets={showPets && isTeacherMode}
+					petAnnotations={visiblePetAnnotations}
 				/>
 			</div>
 		</div>
@@ -427,6 +534,16 @@
 	<div class="right">
 		<svg bind:this={svg}></svg>
 		<p class="step-description">{currentDescription}</p>
+		{#if showPets && isTeacherMode && currentPetFeedback}
+			<p
+				class="pet-feedback"
+				class:correct={activePetGate && petAnswers[activePetGate.id]?.correct}
+				class:incorrect={activePetGate &&
+					petAnswers[activePetGate.id]?.correct === false}
+			>
+				{currentPetFeedback}
+			</p>
+		{/if}
 
 		<!-- Algorithm Controls -->
 		<div class="controls">
@@ -444,6 +561,14 @@
 			{/if}
 
 			{#if isTeacherMode}
+				<label class="pet-toggle">
+					<input
+						type="checkbox"
+						bind:checked={showPets}
+						on:change={renderPetAnnotations}
+					/>
+					PET guidance
+				</label>
 				<button on:click={previousStep} disabled={currentStepIndex === 0}
 					>Previous</button
 				>
@@ -458,7 +583,10 @@
 				/>
 				<button
 					on:click={nextStep}
-					disabled={currentStepIndex === steps.length - 1}>Next</button
+					disabled={currentStepIndex === steps.length - 1 || petGateBlocksNext}
+					title={petGateBlocksNext
+						? "Answer the PET question before continuing."
+						: undefined}>Next</button
 				>
 				<button on:click={exitTeacherMode}>Exit Teacher Mode</button>
 			{/if}
@@ -581,5 +709,113 @@
 	}
 	.step-slider:hover {
 		accent-color: var(--sliderHoverAccent);
+	}
+
+	.pet-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 10px;
+		background: var(--panelHeaderBackground);
+		color: var(--panelHeaderText);
+		border-radius: 5px;
+		font-size: 0.95rem;
+	}
+
+	.pet-feedback {
+		margin: 4px 0 0;
+		padding: 6px 10px;
+		border-radius: 5px;
+		font-size: 0.9rem;
+		background: #fff7dd;
+		color: #493400;
+	}
+
+	.pet-feedback.correct {
+		background: #e6f7ec;
+		color: #174d2a;
+	}
+
+	.pet-feedback.incorrect {
+		background: #fdecec;
+		color: #7a1f1f;
+	}
+
+	:global(.pet-highlight) {
+		pointer-events: none;
+	}
+
+	:global(.pet-speech-bubble),
+	:global(.pet-question) {
+		cursor: grab;
+	}
+
+	:global(.pet-speech-bubble.dragging),
+	:global(.pet-question.dragging) {
+		cursor: grabbing;
+	}
+
+	:global(.pet-speech-bubble-box),
+	:global(.pet-speech-bubble-pointer),
+	:global(.pet-question-box),
+	:global(.pet-question-pointer) {
+		fill: #fff9e6;
+		stroke: #ffc552;
+		stroke-width: 1.5px;
+		filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.2));
+	}
+
+	:global(.pet-question-box),
+	:global(.pet-question-pointer) {
+		fill: #eef6ff;
+		stroke: #6aa7ff;
+	}
+
+	:global(.pet-speech-bubble-text),
+	:global(.pet-question-text),
+	:global(.pet-question-feedback) {
+		fill: #333;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		font-size: 13px;
+		pointer-events: none;
+	}
+
+	:global(.pet-question-feedback.correct) {
+		fill: #20663a;
+	}
+
+	:global(.pet-question-feedback.incorrect) {
+		fill: #8a2525;
+	}
+
+	:global(.pet-question-option) {
+		cursor: pointer;
+	}
+
+	:global(.pet-question-option rect) {
+		fill: #ffffff;
+		stroke: #6aa7ff;
+		stroke-width: 1px;
+	}
+
+	:global(.pet-question-option:hover rect) {
+		fill: #dbeafe;
+	}
+
+	:global(.pet-question-option.selected.correct rect) {
+		fill: #daf5e2;
+		stroke: #2d8a4d;
+	}
+
+	:global(.pet-question-option.selected.incorrect rect) {
+		fill: #ffe1e1;
+		stroke: #b43c3c;
+	}
+
+	:global(.pet-question-option-text) {
+		fill: #163150;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		font-size: 12px;
+		pointer-events: none;
 	}
 </style>
