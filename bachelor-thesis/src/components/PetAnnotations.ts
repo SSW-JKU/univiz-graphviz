@@ -218,9 +218,6 @@ export class SVGPetAnnotationManager {
 		textValue: string,
 		options: PetQuestionOption[] = []
 	): void {
-		const anchor = this.targetAnchor(annotation.target);
-		if (!anchor) return;
-
 		const group = layer
 			.append("g")
 			.attr("class", `pet-annotation ${className}`)
@@ -276,6 +273,16 @@ export class SVGPetAnnotationManager {
 			paddingY * 2 +
 			optionBlockHeight +
 			feedbackBlockHeight;
+		const anchor = this.targetAnchor(
+			annotation.target,
+			annotation.id,
+			rectWidth,
+			rectHeight
+		);
+		if (!anchor) {
+			group.remove();
+			return;
+		}
 		const calloutPosition = this.calloutPosition(
 			annotation.id,
 			anchor,
@@ -391,9 +398,19 @@ export class SVGPetAnnotationManager {
 		});
 	}
 
-	private targetAnchor(target: PetAnnotationTarget): Point | null {
+	private targetAnchor(
+		target: PetAnnotationTarget,
+		annotationId?: string,
+		rectWidth?: number,
+		rectHeight?: number
+	): Point | null {
 		if (target.kind === "edge") {
-			const edgeAnchor = this.edgeAnchor(target);
+			const edgeAnchor = this.edgeAnchor(
+				target,
+				annotationId,
+				rectWidth,
+				rectHeight
+			);
 			if (edgeAnchor) return edgeAnchor;
 		}
 
@@ -406,7 +423,10 @@ export class SVGPetAnnotationManager {
 	}
 
 	private edgeAnchor(
-		target: Extract<PetAnnotationTarget, { kind: "edge" }>
+		target: Extract<PetAnnotationTarget, { kind: "edge" }>,
+		annotationId?: string,
+		rectWidth?: number,
+		rectHeight?: number
 	): Point | null {
 		const rootG = this.options.getRootG();
 		if (!rootG) return null;
@@ -416,9 +436,18 @@ export class SVGPetAnnotationManager {
 		);
 		if (label) {
 			const box = label.getBBox();
-			return {
+			const center = {
 				x: box.x + box.width / 2,
 				y: box.y + box.height / 2,
+			};
+			const calloutX =
+				annotationId && rectWidth !== undefined && rectHeight !== undefined
+					? this.calloutPosition(annotationId, center, rectWidth, rectHeight).x
+					: center.x + this.calloutOffset(annotationId ?? "").x;
+			const anchorX = calloutX < center.x ? box.x : box.x + box.width;
+			return {
+				x: anchorX,
+				y: center.y,
 			};
 		}
 
