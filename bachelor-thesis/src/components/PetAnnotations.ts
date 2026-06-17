@@ -81,6 +81,7 @@ const DEFAULT_CALLOUT_OFFSET: Point = { x: 18, y: -42 };
 const CALLOUT_MIN_WIDTH = 120;
 const CALLOUT_MAX_WIDTH = 260;
 const CALLOUT_TEXT_FALLBACK_CHAR_WIDTH = 7;
+const EDGE_LABEL_ANCHOR_GAP = 6;
 
 export class SVGPetAnnotationManager {
 	private annotations: PedagogicalAnnotation[] = [];
@@ -444,7 +445,10 @@ export class SVGPetAnnotationManager {
 				annotationId && rectWidth !== undefined && rectHeight !== undefined
 					? this.calloutPosition(annotationId, center, rectWidth, rectHeight).x
 					: center.x + this.calloutOffset(annotationId ?? "").x;
-			const anchorX = calloutX < center.x ? box.x : box.x + box.width;
+			const anchorX =
+				calloutX < center.x
+					? box.x - EDGE_LABEL_ANCHOR_GAP
+					: box.x + box.width + EDGE_LABEL_ANCHOR_GAP;
 			return {
 				x: anchorX,
 				y: center.y,
