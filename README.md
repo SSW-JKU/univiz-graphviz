@@ -1,9 +1,9 @@
-# Graph Algorithm Visualization Tool
+# Univiz Graphviz
 
-This project is the web application developed for a bachelor thesis about
-interactive graph and graph algorithm visualization for teaching. It provides a
-browser-based environment for building graphs, importing DOT source, and stepping
-through graph algorithms with synchronized graph and table views.
+This project is the Graphviz-based graph algorithm visualization part of
+univiz.org. It provides a browser-based environment for building graphs,
+importing DOT source, and stepping through BFS, DFS, and Dijkstra with
+synchronized graph and table views.
 
 The application is built with Svelte, TypeScript, Vite, D3, Graphviz/Viz.js, and
 CodeMirror.
@@ -27,7 +27,7 @@ CodeMirror.
 ## Project Structure
 
 ```text
-bachelor-thesis/
+univiz-graphviz/
   src/
     algorithms/       Algorithm implementations and shared simulation UI
     colors/           CSS color constants
@@ -98,13 +98,13 @@ client-side routes work when opened directly.
 Build the image locally:
 
 ```bash
-docker build -t ghcr.io/guck1311/bachelor-thesis:latest .
+docker build -t ghcr.io/guck1311/univiz-graphviz:latest .
 ```
 
 Run it locally:
 
 ```bash
-docker run --rm -p 8080:80 ghcr.io/guck1311/bachelor-thesis:latest
+docker run --rm -p 8080:80 ghcr.io/guck1311/univiz-graphviz:latest
 ```
 
 ### Publishing
@@ -112,8 +112,8 @@ docker run --rm -p 8080:80 ghcr.io/guck1311/bachelor-thesis:latest
 GitHub Actions builds and publishes the image on pushes to `main` or `master`:
 
 ```text
-ghcr.io/guck1311/bachelor-thesis:latest
-ghcr.io/guck1311/bachelor-thesis:<commit-sha>
+ghcr.io/guck1311/univiz-graphviz:latest
+ghcr.io/guck1311/univiz-graphviz:<commit-sha>
 ```
 
 The package can be public. If it is private, log in on the VM before pulling:
@@ -139,7 +139,7 @@ Create the deployment directory and fetch the compose file:
 ```bash
 mkdir -p /opt/graph-app
 cd /opt/graph-app
-curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/Guck1311/bachelor-thesis/master/deploy/docker-compose.yml
+curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/Guck1311/univiz-graphviz/master/deploy/docker-compose.yml
 ```
 
 Start or update the app:
