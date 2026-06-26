@@ -5,6 +5,9 @@ on:
     branches:
       - main
       - master
+    paths:
+      - "bachelor-thesis/**"
+      - ".github/workflows/docker-image.yml"
   workflow_dispatch:
 
 permissions:
@@ -32,7 +35,7 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: bachelor-thesis
           push: true
           tags: |
             ghcr.io/guck1311/bachelor-thesis:latest

@@ -139,7 +139,7 @@ Create the deployment directory and fetch the compose file:
 ```bash
 mkdir -p /opt/graph-app
 cd /opt/graph-app
-curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/Guck1311/bachelor-thesis/master/deploy/docker-compose.yml
+curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/Guck1311/bachelor-thesis/master/bachelor-thesis/deploy/docker-compose.yml
 ```
 
 Start or update the app:
