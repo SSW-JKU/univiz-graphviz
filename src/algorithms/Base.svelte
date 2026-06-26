@@ -84,6 +84,11 @@
 		rowsScrollable: string[][];
 	};
 
+	const updateDotSrcQueryParam = (nextDotSrc: string) => {
+		const nextUrl = `${window.location.pathname}?dotSrc=${encodeURIComponent(nextDotSrc)}`;
+		window.history.replaceState(window.history.state, "", nextUrl);
+	};
+
 	// Function to initialize headers for distances
 	const initializeTableHeaders = (nodes: D3Node[]) => {
 		if (algorithm === AlgorithmMode.DIJKSTRA) {
@@ -177,6 +182,7 @@
 						EditorView.updateListener.of((update) => {
 							if (update.docChanged) {
 								dotSrc = editor.state.doc.toString();
+								updateDotSrcQueryParam(dotSrc);
 								updateGraph();
 							}
 						}),
@@ -236,6 +242,7 @@
 				EditorView.updateListener.of((update) => {
 					if (update.docChanged) {
 						dotSrc = editor.state.doc.toString();
+						updateDotSrcQueryParam(dotSrc);
 						updateGraph();
 					}
 				}),
