@@ -1,47 +1,275 @@
-# Svelte + TS + Vite
+# Graph Algorithm Visualization Tool
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+This project is the web application developed for a bachelor thesis about
+interactive graph and graph algorithm visualization for teaching. It provides a
+browser-based environment for building graphs, importing DOT source, and stepping
+through graph algorithms with synchronized graph and table views.
 
-## Recommended IDE Setup
+The application is built with Svelte, TypeScript, Vite, D3, Graphviz/Viz.js, and
+CodeMirror.
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+## Features
 
-## Need an official Svelte framework?
+- Build directed and undirected graphs interactively.
+- Import, edit, and visualize DOT graph descriptions.
+- Copy generated DOT source from the graph builder.
+- Open graphs directly in algorithm views through URL-encoded DOT source.
+- Step through BFS, DFS, and Dijkstra simulations.
+- Show algorithm state in a synchronized table view.
+- Highlight visited, seen, selected, and irrelevant graph elements.
+- Use PET guidance in teacher mode for Dijkstra:
+  - graph and table highlights
+  - speech bubbles
+  - gated multiple-choice questions
+  - answer feedback
+  - draggable SVG callouts
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+## Project Structure
 
-## Technical considerations
+```text
+bachelor-thesis/
+  src/
+    algorithms/       Algorithm implementations and shared simulation UI
+    colors/           CSS color constants
+    components/       Graph builder, visualizer, tables, PET renderers
+    images/           Example graph preview images
+    pages/            Routed page components
+    prototypes/       Earlier D3/Svelte experiments
+    types/            Shared graph data types
+  LaTeX/              Thesis sources and generated thesis artifacts
+  deploy/             VM deployment examples for Docker Compose and Caddy
+  Dockerfile          Production image build
+  nginx.conf          Static nginx runtime config with SPA fallback
+  package.json        Development, build, preview, and check scripts
+```
 
-**Why use this over SvelteKit?**
+Important application files:
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+- `src/App.svelte` defines the routes and navigation.
+- `src/components/GraphBuilder.svelte` implements interactive graph creation.
+- `src/components/Visualizer.svelte` implements DOT editing and rendering.
+- `src/algorithms/Base.svelte` contains the shared algorithm simulation UI.
+- `src/algorithms/BFS.ts`, `DFS.ts`, and `Dijkstra.ts` generate simulation
+  steps.
+- `src/components/DijkstraTable.svelte` renders the algorithm table.
+- `src/components/PetAnnotations.ts` contains `SVGPetAnnotationManager` and
+  `TablePetAnnotationManager`.
 
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
+## Getting Started
 
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
+Install dependencies from this directory:
 
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
+```bash
+npm install
+```
 
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
+Start the development server:
 
-**Why include `.vscode/extensions.json`?**
+```bash
+npm run dev
+```
 
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
+Vite prints the local URL in the terminal, usually `http://localhost:5173/`.
 
-**Why enable `allowJs` in the TS template?**
+Build the production bundle:
 
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
+```bash
+npm run build
+```
 
-**Why is HMR not preserving my local component state?**
+Preview the production build locally:
 
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
+```bash
+npm run preview
+```
 
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
+Run Svelte and TypeScript diagnostics:
 
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+```bash
+npm run check
+```
+
+## Docker Deployment
+
+The production image builds the Vite app with Node and serves the generated
+`dist` directory with nginx. The nginx config falls back to `index.html`, so
+client-side routes work when opened directly.
+
+Build the image locally:
+
+```bash
+docker build -t ghcr.io/guck1311/bachelor-thesis:latest .
+```
+
+Run it locally:
+
+```bash
+docker run --rm -p 8080:80 ghcr.io/guck1311/bachelor-thesis:latest
+```
+
+### Publishing
+
+GitHub Actions builds and publishes the image on pushes to `main` or `master`:
+
+```text
+ghcr.io/guck1311/bachelor-thesis:latest
+ghcr.io/guck1311/bachelor-thesis:<commit-sha>
+```
+
+The package can be public. If it is private, log in on the VM before pulling:
+
+```bash
+echo "<github-token>" | docker login ghcr.io -u Guck1311 --password-stdin
+```
+
+The token needs `read:packages` for pulling a private image.
+
+### Hetzner VM
+
+Install Docker and the Compose plugin:
+
+```bash
+apt update
+apt install docker.io docker-compose-v2
+systemctl enable --now docker
+```
+
+Create the deployment directory and fetch the compose file:
+
+```bash
+mkdir -p /opt/graph-app
+cd /opt/graph-app
+curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/Guck1311/bachelor-thesis/master/deploy/docker-compose.yml
+```
+
+Start or update the app:
+
+```bash
+docker compose pull
+docker compose up -d --remove-orphans
+```
+
+Reusable update command:
+
+```bash
+cd /opt/graph-app && docker compose pull && docker compose up -d --remove-orphans
+```
+
+The compose file binds the container to `127.0.0.1:3003`, so it is only exposed
+locally on the VM. Watchtower is included and checks every 120 seconds for a new
+image tagged `latest`; when it finds one, it recreates the app container and
+removes the old image.
+
+### Caddy
+
+Use Caddy as the public HTTPS reverse proxy:
+
+```caddy
+graph.univiz.org, graphs.univiz.org {
+  reverse_proxy 127.0.0.1:3003
+}
+```
+
+Reload Caddy after changing the Caddyfile:
+
+```bash
+systemctl reload caddy
+```
+
+## Application Routes
+
+- `/` - project overview and goals
+- `/graphbuilding/build-undirected-graph` - interactive undirected graph builder
+- `/graphbuilding/build-directed-graph` - interactive directed graph builder
+- `/graphbuilding/visualizer` - DOT editor and graph visualizer
+- `/graphbuilding/examples` - predefined graph examples
+- `/algorithms/bfs` - Breadth-First Search simulation
+- `/algorithms/dfs` - Depth-First Search simulation
+- `/algorithms/dijkstra` - Dijkstra simulation
+- `/about` - thesis background and feature overview
+
+Graph state is passed between views with a `dotSrc` query parameter. For
+example, the builder and visualizer link into algorithm routes by URL-encoding
+the current DOT source.
+
+## Graph Model
+
+The app uses two node identifiers:
+
+- `id`: application-facing identifier such as `node0`
+- `d3id`: numeric identifier used by D3, Graphviz-derived layouts, and algorithm
+  steps
+
+Edges store references to their endpoint nodes, optional weights, and layout
+positions parsed from Graphviz/Viz.js output.
+
+## Algorithm Simulation
+
+Each algorithm returns an ordered list of `AlgorithmStep` objects. A step records
+the current node, current edge, visited nodes, visited edges, descriptive text,
+and optional algorithm-specific state such as queues, neighbors, distances,
+previous nodes, seen nodes, and PET annotations.
+
+`Base.svelte` consumes these steps and coordinates:
+
+- graph highlighting
+- table updates
+- step navigation
+- teacher mode state
+- PET question gating
+
+## PET Annotations
+
+PET annotations are optional metadata attached to algorithm steps. They describe
+pedagogical guidance without changing the algorithm result.
+
+Supported annotation actions:
+
+- `highlight`: emphasizes graph or table targets
+- `say`: renders an explanatory speech bubble
+- `ask`: renders a question bubble with answer options and feedback
+
+Supported targets include:
+
+- whole graph
+- node
+- edge
+- Dijkstra distance column
+- Dijkstra local-min column
+
+Rendering is split by surface:
+
+- `SVGPetAnnotationManager` renders SVG graph highlights, speech bubbles, and
+  question callouts.
+- `TablePetAnnotationManager` computes table highlight state for table targets.
+
+PET annotation IDs must be unique because they key answer state, feedback state,
+dragged callout offsets, and duplicate-recording checks.
+
+## DOT and Graphviz Notes
+
+The application accepts DOT input and uses Viz.js for graph layout. Undirected
+graphs are internally normalized to directed DOT where needed so the shared
+renderer and algorithm code can operate consistently.
+
+Example undirected graph:
+
+```dot
+graph {
+  splines=true;
+  node0 [label="A"]
+  node1 [label="B"]
+  node0 -- node1 [weight=4]
+}
+```
+
+Example directed graph:
+
+```dot
+digraph {
+  splines=true;
+  node0 [label="Start"]
+  node1 [label="End"]
+  node0 -> node1 [weight=1]
+}
 ```

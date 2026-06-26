@@ -1,0 +1,13 @@
+.git
+.github
+.idea
+.vscode
+LaTeX
+node_modules
+dist
+dist-ssr
+logs
+*.log
+*.local
+Dockerfile
+README.md

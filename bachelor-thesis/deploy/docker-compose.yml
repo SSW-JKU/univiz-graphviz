@@ -1,0 +1,17 @@
+services:
+  graph-app:
+    image: ghcr.io/guck1311/bachelor-thesis:latest
+    container_name: graph-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3003:80"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    command: --interval 120 --cleanup --label-enable
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
