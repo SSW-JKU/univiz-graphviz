@@ -7,8 +7,12 @@ The container image is public, so no registry login is required. Run these
 commands as a user with `sudo` access:
 
 ```bash
-sudo mkdir -p /opt/graph-app && cd /opt/graph-app
-sudo curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/SSW-JKU/univiz-graphviz/HEAD/deploy/docker-compose.yml
+sudo mkdir -p /opt/graph-app
+cd /opt/graph-app
+
+sudo curl -fsSL -o docker-compose.yml \
+  https://raw.githubusercontent.com/SSW-JKU/univiz-graphviz/HEAD/deploy/docker-compose.yml
+
 sudo docker compose pull
 sudo docker compose up -d --remove-orphans
 sudo docker compose ps
