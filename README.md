@@ -98,13 +98,13 @@ client-side routes work when opened directly.
 Build the image locally:
 
 ```bash
-docker build -t ghcr.io/guck1311/univiz-graphviz:latest .
+docker build -t ghcr.io/ssw-jku/univiz-graphviz:latest .
 ```
 
 Run it locally:
 
 ```bash
-docker run --rm -p 8080:80 ghcr.io/guck1311/univiz-graphviz:latest
+docker run --rm -p 8080:80 ghcr.io/ssw-jku/univiz-graphviz:latest
 ```
 
 ### Publishing
@@ -112,17 +112,11 @@ docker run --rm -p 8080:80 ghcr.io/guck1311/univiz-graphviz:latest
 GitHub Actions builds and publishes the image on pushes to `main` or `master`:
 
 ```text
-ghcr.io/guck1311/univiz-graphviz:latest
-ghcr.io/guck1311/univiz-graphviz:<commit-sha>
+ghcr.io/ssw-jku/univiz-graphviz:latest
+ghcr.io/ssw-jku/univiz-graphviz:<commit-sha>
 ```
 
-The package can be public. If it is private, log in on the VM before pulling:
-
-```bash
-echo "<github-token>" | docker login ghcr.io -u Guck1311 --password-stdin
-```
-
-The token needs `read:packages` for pulling a private image.
+The package is public and can be pulled without registry authentication.
 
 ### Hetzner VM
 
@@ -139,7 +133,7 @@ Create the deployment directory and fetch the compose file:
 ```bash
 mkdir -p /opt/graph-app
 cd /opt/graph-app
-curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/Guck1311/univiz-graphviz/master/deploy/docker-compose.yml
+curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/SSW-JKU/univiz-graphviz/master/deploy/docker-compose.yml
 ```
 
 Start or update the app:

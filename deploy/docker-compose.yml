@@ -1,6 +1,6 @@
 services:
   graph-app:
-    image: ghcr.io/guck1311/univiz-graphviz:latest
+    image: ghcr.io/ssw-jku/univiz-graphviz:latest
     container_name: graph-app
     restart: unless-stopped
     ports:

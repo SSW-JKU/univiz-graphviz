@@ -35,5 +35,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/guck1311/univiz-graphviz:latest
-            ghcr.io/guck1311/univiz-graphviz:${{ github.sha }}
+            ghcr.io/ssw-jku/univiz-graphviz:latest
+            ghcr.io/ssw-jku/univiz-graphviz:${{ github.sha }}
