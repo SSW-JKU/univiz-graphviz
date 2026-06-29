@@ -1,252 +1,180 @@
-# Univiz Graphviz
+# UniViz Graphviz
 
-This project is the Graphviz-based graph algorithm visualization part of
-univiz.org. It provides a browser-based environment for building graphs,
-importing DOT source, and stepping through BFS, DFS, and Dijkstra with
-synchronized graph and table views.
+Interactive graph building and step-by-step algorithm visualization for
+[UniViz](https://univiz.org/).
 
-The application is built with Svelte, TypeScript, Vite, D3, Graphviz/Viz.js, and
-CodeMirror.
+[Open the live application](https://graph.univiz.org/) ·
+[Production deployment](#production-deployment) ·
+[Container package](https://github.com/orgs/SSW-JKU/packages/container/package/univiz-graphviz)
 
-## Features
+UniViz Graphviz helps students explore graph algorithms and gives lecturers a
+visual teaching aid. Build a graph interactively or write DOT directly, then
+follow Breadth-First Search, Depth-First Search, or Dijkstra's algorithm one
+step at a time.
 
-- Build directed and undirected graphs interactively.
-- Import, edit, and visualize DOT graph descriptions.
-- Copy generated DOT source from the graph builder.
-- Open graphs directly in algorithm views through URL-encoded DOT source.
-- Step through BFS, DFS, and Dijkstra simulations.
-- Show algorithm state in a synchronized table view.
-- Highlight visited, seen, selected, and irrelevant graph elements.
-- Use PET guidance in teacher mode for Dijkstra:
-  - graph and table highlights
-  - speech bubbles
-  - gated multiple-choice questions
-  - answer feedback
-  - draggable SVG callouts
+![Example weighted graph included with UniViz Graphviz](src/images/Graph1.png)
 
-## Project Structure
+## What you can do
 
-```text
-univiz-graphviz/
-  src/
-    algorithms/       Algorithm implementations and shared simulation UI
-    colors/           CSS color constants
-    components/       Graph builder, visualizer, tables, PET renderers
-    images/           Example graph preview images
-    pages/            Routed page components
-    prototypes/       Earlier D3/Svelte experiments
-    types/            Shared graph data types
-  LaTeX/              Thesis sources and generated thesis artifacts
-  deploy/             VM deployment examples for Docker Compose and Caddy
-  Dockerfile          Production image build
-  nginx.conf          Static nginx runtime config with SPA fallback
-  package.json        Development, build, preview, and check scripts
-```
+- Build directed and undirected graphs without writing DOT.
+- Add and remove nodes, connect nodes, rename labels, and edit edge weights.
+- Import, edit, validate, render, and copy Graphviz DOT source.
+- Open the same graph in BFS, DFS, or Dijkstra without recreating it.
+- Choose an algorithm's start node and inspect each step in the graph and table.
+- Move backward and forward through a simulation or jump with the step slider.
+- Start from one of four included example graphs and edit it further.
+- Use optional PET guidance during Dijkstra demonstrations, including
+  highlights, explanations, questions, and immediate answer feedback.
 
-Important application files:
+## Application tour
 
-- `src/App.svelte` defines the routes and navigation.
-- `src/components/GraphBuilder.svelte` implements interactive graph creation.
-- `src/components/Visualizer.svelte` implements DOT editing and rendering.
-- `src/algorithms/Base.svelte` contains the shared algorithm simulation UI.
-- `src/algorithms/BFS.ts`, `DFS.ts`, and `Dijkstra.ts` generate simulation
-  steps.
-- `src/components/DijkstraTable.svelte` renders the algorithm table.
-- `src/components/PetAnnotations.ts` contains `SVGPetAnnotationManager` and
-  `TablePetAnnotationManager`.
+| Area | Purpose |
+| --- | --- |
+| Graph Builder | Create directed or undirected graphs interactively and edit node labels or edge weights. |
+| DOT Visualizer | Edit DOT in CodeMirror and see the Graphviz layout update alongside it. |
+| Examples | Select a prepared graph, edit it, or send it directly to an algorithm. |
+| BFS and DFS | Follow visited nodes, neighbors, traversal order, and queue state where applicable. |
+| Dijkstra | Follow tentative distances, predecessor paths, visited nodes, and the current local minimum. |
+| Teacher Mode | Step through the selected algorithm with synchronized graph highlighting and state tables. |
 
-## Getting Started
+Graphs move between views through the URL-encoded `dotSrc` query parameter.
+This makes a graph reproducible across the builder, visualizer, and algorithm
+pages and allows a configured view to be shared as a URL.
 
-Install dependencies from this directory:
+## Run locally
+
+Requirements:
+
+- Node.js 22 (matching the production build image)
+- npm
+
+Install the locked dependencies and start Vite:
 
 ```bash
-npm install
-```
-
-Start the development server:
-
-```bash
+npm ci
 npm run dev
 ```
 
-Vite prints the local URL in the terminal, usually `http://localhost:5173/`.
+Vite prints the local address, normally `http://localhost:5173/`.
 
-Build the production bundle:
-
-```bash
-npm run build
-```
-
-Preview the production build locally:
-
-```bash
-npm run preview
-```
-
-Run Svelte and TypeScript diagnostics:
+Useful checks:
 
 ```bash
 npm run check
+npm run build
+npm run preview
 ```
 
-## Docker Deployment
+## Run with Docker
 
-The production image builds the Vite app with Node and serves the generated
-`dist` directory with nginx. The nginx config falls back to `index.html`, so
-client-side routes work when opened directly.
-
-Build the image locally:
+The public image is available from GitHub Container Registry and does not
+require authentication:
 
 ```bash
-docker build -t ghcr.io/ssw-jku/univiz-graphviz:latest .
-```
-
-Run it locally:
-
-```bash
+docker pull ghcr.io/ssw-jku/univiz-graphviz:latest
 docker run --rm -p 8080:80 ghcr.io/ssw-jku/univiz-graphviz:latest
 ```
 
-### Publishing
+Open `http://localhost:8080/`.
 
-GitHub Actions builds and publishes the image on pushes to `main` or `master`:
+The production image builds the Vite application with Node.js and serves the
+static bundle through nginx. The nginx configuration includes an
+`index.html` fallback so application routes work when opened directly.
+
+## Production deployment
+
+The supported production setup uses Docker Compose:
+
+- `graph-app` serves the application on `127.0.0.1:3003`.
+- `watchtower` checks the `latest` image every 120 seconds and replaces the
+  application container when a new image is published.
+- Caddy can expose the local port through HTTPS.
+
+On the production server, download the repository's
+[Compose file](deploy/docker-compose.yml) and start the complete stack:
+
+```bash
+sudo mkdir -p /opt/graph-app
+cd /opt/graph-app
+
+sudo curl -fsSL -o docker-compose.yml \
+  https://raw.githubusercontent.com/SSW-JKU/univiz-graphviz/HEAD/deploy/docker-compose.yml
+
+sudo docker compose pull
+sudo docker compose up -d --remove-orphans
+sudo docker compose ps
+```
+
+The `HEAD` segment resolves to the repository's current default branch. To
+deploy an updated Compose file or image later, rerun:
+
+```bash
+cd /opt/graph-app
+sudo curl -fsSL -o docker-compose.yml \
+  https://raw.githubusercontent.com/SSW-JKU/univiz-graphviz/HEAD/deploy/docker-compose.yml
+sudo docker compose pull
+sudo docker compose up -d --remove-orphans
+sudo docker compose ps
+```
+
+For HTTPS, use [deploy/Caddyfile.example](deploy/Caddyfile.example) as the
+reverse-proxy configuration.
+
+Pushes to `master` publish these image tags:
 
 ```text
 ghcr.io/ssw-jku/univiz-graphviz:latest
 ghcr.io/ssw-jku/univiz-graphviz:<commit-sha>
 ```
 
-The package is public and can be pulled without registry authentication.
+## Routes
 
-### Hetzner VM
+| Route | View |
+| --- | --- |
+| `/` | Product overview and available modes |
+| `/graphbuilding/build-undirected-graph` | Undirected graph builder |
+| `/graphbuilding/build-directed-graph` | Directed graph builder |
+| `/graphbuilding/visualizer` | DOT editor and visualizer |
+| `/graphbuilding/examples` | Prepared graph examples |
+| `/algorithms/bfs` | Breadth-First Search |
+| `/algorithms/dfs` | Depth-First Search |
+| `/algorithms/dijkstra` | Dijkstra's shortest-path algorithm |
+| `/about` | Project and thesis background |
 
-Install Docker and the Compose plugin:
+## How it works
 
-```bash
-apt update
-apt install docker.io docker-compose-v2
-systemctl enable --now docker
-```
+### Graph representation
 
-Create the deployment directory and fetch the compose file:
+The application keeps two identifiers for each node:
 
-```bash
-mkdir -p /opt/graph-app
-cd /opt/graph-app
-curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/SSW-JKU/univiz-graphviz/master/deploy/docker-compose.yml
-```
+- `id` is the application-facing identifier, such as `node0`.
+- `d3id` is the numeric identifier used by D3, Graphviz-derived layouts, and
+  algorithm steps.
 
-Start or update the app:
+Edges reference their endpoint nodes and can carry a weight plus layout
+coordinates parsed from Graphviz output.
 
-```bash
-docker compose pull
-docker compose up -d --remove-orphans
-```
+### Algorithm simulation
 
-Reusable update command:
+Each algorithm produces an ordered collection of `AlgorithmStep` objects. A
+step records the current node and edge, visited nodes and edges, descriptive
+text, and algorithm-specific state such as neighbors, queues, distances,
+predecessors, and shortest paths.
 
-```bash
-cd /opt/graph-app && docker compose pull && docker compose up -d --remove-orphans
-```
+`src/algorithms/Base.svelte` coordinates the shared simulation interface:
 
-The compose file binds the container to `127.0.0.1:3003`, so it is only exposed
-locally on the VM. Watchtower is included and checks every 120 seconds for a new
-image tagged `latest`; when it finds one, it recreates the app container and
-removes the old image.
+- Graph and edge highlighting
+- State-table updates
+- Start-node selection
+- Previous, next, and slider navigation
+- Teacher Mode state
+- PET question gating and feedback
 
-### Caddy
+### DOT and Graphviz
 
-Use Caddy as the public HTTPS reverse proxy:
-
-```caddy
-graph.univiz.org, graphs.univiz.org {
-  reverse_proxy 127.0.0.1:3003
-}
-```
-
-Reload Caddy after changing the Caddyfile:
-
-```bash
-systemctl reload caddy
-```
-
-## Application Routes
-
-- `/` - project overview and goals
-- `/graphbuilding/build-undirected-graph` - interactive undirected graph builder
-- `/graphbuilding/build-directed-graph` - interactive directed graph builder
-- `/graphbuilding/visualizer` - DOT editor and graph visualizer
-- `/graphbuilding/examples` - predefined graph examples
-- `/algorithms/bfs` - Breadth-First Search simulation
-- `/algorithms/dfs` - Depth-First Search simulation
-- `/algorithms/dijkstra` - Dijkstra simulation
-- `/about` - thesis background and feature overview
-
-Graph state is passed between views with a `dotSrc` query parameter. For
-example, the builder and visualizer link into algorithm routes by URL-encoding
-the current DOT source.
-
-## Graph Model
-
-The app uses two node identifiers:
-
-- `id`: application-facing identifier such as `node0`
-- `d3id`: numeric identifier used by D3, Graphviz-derived layouts, and algorithm
-  steps
-
-Edges store references to their endpoint nodes, optional weights, and layout
-positions parsed from Graphviz/Viz.js output.
-
-## Algorithm Simulation
-
-Each algorithm returns an ordered list of `AlgorithmStep` objects. A step records
-the current node, current edge, visited nodes, visited edges, descriptive text,
-and optional algorithm-specific state such as queues, neighbors, distances,
-previous nodes, seen nodes, and PET annotations.
-
-`Base.svelte` consumes these steps and coordinates:
-
-- graph highlighting
-- table updates
-- step navigation
-- teacher mode state
-- PET question gating
-
-## PET Annotations
-
-PET annotations are optional metadata attached to algorithm steps. They describe
-pedagogical guidance without changing the algorithm result.
-
-Supported annotation actions:
-
-- `highlight`: emphasizes graph or table targets
-- `say`: renders an explanatory speech bubble
-- `ask`: renders a question bubble with answer options and feedback
-
-Supported targets include:
-
-- whole graph
-- node
-- edge
-- Dijkstra distance column
-- Dijkstra local-min column
-
-Rendering is split by surface:
-
-- `SVGPetAnnotationManager` renders SVG graph highlights, speech bubbles, and
-  question callouts.
-- `TablePetAnnotationManager` computes table highlight state for table targets.
-
-PET annotation IDs must be unique because they key answer state, feedback state,
-dragged callout offsets, and duplicate-recording checks.
-
-## DOT and Graphviz Notes
-
-The application accepts DOT input and uses Viz.js for graph layout. Undirected
-graphs are internally normalized to directed DOT where needed so the shared
-renderer and algorithm code can operate consistently.
-
-Example undirected graph:
+The application accepts Graphviz DOT and uses Viz.js to calculate layouts.
+Undirected input is normalized internally where the common renderer and
+algorithm code require directed edges.
 
 ```dot
 graph {
@@ -257,13 +185,60 @@ graph {
 }
 ```
 
-Example directed graph:
+### PET guidance
 
-```dot
-digraph {
-  splines=true;
-  node0 [label="Start"]
-  node1 [label="End"]
-  node0 -> node1 [weight=1]
-}
+PET annotations attach educational guidance to algorithm steps without
+changing the algorithm result. Supported actions include:
+
+- `highlight` for graph or table targets
+- `say` for explanatory callouts
+- `ask` for gated questions with answer feedback
+
+Graph annotations are rendered by `SVGPetAnnotationManager`; table highlighting
+is computed by `TablePetAnnotationManager`. Annotation IDs must remain unique
+because they key answer, feedback, and callout state.
+
+## Project structure
+
+```text
+univiz-graphviz/
+  src/
+    algorithms/       Algorithm implementations and shared simulation UI
+    colors/           Shared color definitions
+    components/       Graph builder, visualizer, tables, and PET rendering
+    images/           Preview images for included graph examples
+    pages/            Routed application pages
+    prototypes/       Earlier D3 and Svelte experiments
+    types/            Shared graph data types
+  deploy/             Docker Compose and Caddy configuration
+  Dockerfile          Multi-stage production image
+  nginx.conf          Static server and SPA fallback
+  package.json        Development and validation scripts
 ```
+
+Key implementation files:
+
+- `src/App.svelte` defines navigation and routes.
+- `src/components/GraphBuilder.svelte` implements interactive graph creation.
+- `src/components/Visualizer.svelte` implements DOT editing and rendering.
+- `src/algorithms/Base.svelte` implements the shared simulation interface.
+- `src/algorithms/BFS.ts`, `DFS.ts`, and `Dijkstra.ts` generate algorithm steps.
+- `src/components/DijkstraTable.svelte` renders the Dijkstra state table.
+- `src/components/PetAnnotations.ts` renders and tracks PET guidance.
+
+## Technology
+
+- Svelte and TypeScript
+- Vite
+- D3 and d3-graphviz
+- Graphviz through Viz.js
+- CodeMirror
+- nginx
+- Docker Compose and Watchtower
+
+## Background
+
+The application originated as a bachelor's thesis project at Johannes Kepler
+University Linz for the course *Algorithms and Data Structures 2*. Its goal is
+to supplement slides and blackboard explanations with an interactive,
+experiment-friendly representation of graph structures and algorithms.
